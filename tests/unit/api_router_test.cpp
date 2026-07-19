@@ -44,5 +44,16 @@ TEST(ApiRouterTest, EnforcesJsonForMutationBodies) {
   EXPECT_FALSE(validate_request("GET", 0, "", "req-4").error);
 }
 
+TEST(ApiRouterTest, SerializesHealthContracts) {
+  EXPECT_EQ(nlohmann::json::parse(serialize_liveness())["status"], "alive");
+  const auto ready = nlohmann::json::parse(
+      serialize_readiness(ReadinessReport{true, "available", "compatible"}));
+  EXPECT_EQ(ready["status"], "ready");
+  EXPECT_EQ(ready["checks"]["schema"], "compatible");
+  const auto unavailable = nlohmann::json::parse(
+      serialize_readiness(ReadinessReport{false, "unavailable", "unknown"}));
+  EXPECT_EQ(unavailable["status"], "unavailable");
+}
+
 } // namespace
 } // namespace taskflow::transport::http

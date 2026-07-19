@@ -17,6 +17,17 @@ namespace {
   return response;
 }
 
+[[nodiscard]] drogon::HttpResponsePtr json_response(const drogon::HttpStatusCode status,
+                                                    std::string body,
+                                                    const std::string &request_id) {
+  auto response = drogon::HttpResponse::newHttpResponse();
+  response->setStatusCode(status);
+  response->setContentTypeString("application/json; charset=utf-8");
+  response->setBody(std::move(body));
+  response->addHeader("X-Request-ID", request_id);
+  return response;
+}
+
 [[nodiscard]] std::string request_id_from(const drogon::HttpRequestPtr &request) {
   const auto stored =
       request->getAttributes()->get<std::string>(std::string{request_id_attribute});
@@ -27,7 +38,8 @@ namespace {
 
 } // namespace
 
-void configure_api_router(drogon::HttpAppFramework &application) {
+void configure_api_router(drogon::HttpAppFramework &application,
+                          ReadinessCheck readiness_check) {
   application.setClientMaxBodySize(maximum_request_body_bytes)
       .setClientMaxMemoryBodySize(maximum_request_body_bytes)
       .registerSyncAdvice([](const drogon::HttpRequestPtr &request) {
@@ -59,6 +71,25 @@ void configure_api_router(drogon::HttpAppFramework &application) {
         response->setBody("{\"version\":\"v1\"}");
         response->addHeader("X-Request-ID", request_id_from(request));
         callback(response);
+      },
+      {drogon::Get});
+
+  application.registerHandler(
+      "/health/live",
+      [](const drogon::HttpRequestPtr &request,
+         std::function<void(const drogon::HttpResponsePtr &)> &&callback) {
+        callback(json_response(drogon::k200OK, serialize_liveness(), request_id_from(request)));
+      },
+      {drogon::Get});
+
+  application.registerHandler(
+      "/health/ready",
+      [check = std::move(readiness_check)](
+          const drogon::HttpRequestPtr &request,
+          std::function<void(const drogon::HttpResponsePtr &)> &&callback) {
+        const auto report = check();
+        callback(json_response(report.ready ? drogon::k200OK : drogon::k503ServiceUnavailable,
+                               serialize_readiness(report), request_id_from(request)));
       },
       {drogon::Get});
 }

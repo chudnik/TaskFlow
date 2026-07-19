@@ -19,19 +19,33 @@ int main(int argc, char *argv[]) {
 
   try {
     const auto config = taskflow::platform::RuntimeConfig::from_environment();
-    const auto schema = taskflow::infrastructure::check_postgres_schema(config.postgres_dsn);
-    if (!schema.is_compatible()) {
-      std::cerr << "schema compatibility error: " << schema.message() << '\n';
-      return 3;
-    }
     const taskflow::platform::StructuredLogger logger{"taskflow-api", config.log_level};
+    try {
+      const auto schema = taskflow::infrastructure::check_postgres_schema(config.postgres_dsn);
+      if (!schema.is_compatible()) {
+        std::cerr << "schema compatibility error: " << schema.message() << '\n';
+        return 3;
+      }
+    } catch (const std::exception &) {
+      logger.log("warn", taskflow::platform::CorrelationContext::request("startup", "startup"),
+                 "degraded", 0, "PostgreSQL unavailable during startup; readiness disabled");
+    }
     logger.log("info", taskflow::platform::CorrelationContext::request("startup", "startup"),
                "ready", 0, "service configuration loaded",
                {{"configuration", config.redacted_diagnostics(),
                  taskflow::platform::FieldSensitivity::public_value}});
 #if TASKFLOW_HAS_DROGON
     auto &application = drogon::app();
-    taskflow::transport::http::configure_api_router(application);
+    taskflow::transport::http::configure_api_router(application, [dsn = config.postgres_dsn]() {
+      try {
+        const auto schema = taskflow::infrastructure::check_postgres_schema(dsn);
+        return taskflow::transport::http::ReadinessReport{
+            schema.is_compatible(), "available",
+            schema.is_compatible() ? "compatible" : "incompatible"};
+      } catch (const std::exception &) {
+        return taskflow::transport::http::ReadinessReport{false, "unavailable", "unknown"};
+      }
+    });
     application.addListener(config.http_address, config.http_port).run();
 #endif
     return 0;

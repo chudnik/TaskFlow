@@ -110,4 +110,14 @@ RequestValidation validate_request(const std::string_view method, const std::siz
   return validation;
 }
 
+std::string serialize_liveness() { return "{\"status\":\"alive\"}"; }
+
+std::string serialize_readiness(const ReadinessReport &report) {
+  std::ostringstream output;
+  output << "{\"status\":\"" << (report.ready ? "ready" : "unavailable")
+         << "\",\"checks\":{\"postgres\":\"" << escape_json(report.postgres)
+         << "\",\"schema\":\"" << escape_json(report.schema) << "\"}}";
+  return output.str();
+}
+
 } // namespace taskflow::transport::http

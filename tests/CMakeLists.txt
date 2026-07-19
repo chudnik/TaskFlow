@@ -37,6 +37,18 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   gtest_discover_tests(taskflow-postgres-integration-tests
     TEST_PREFIX "integration."
   )
+
+  add_test(
+    NAME integration.health-endpoints
+    COMMAND sh ${PROJECT_SOURCE_DIR}/tests/integration/health_endpoints_test.sh
+      $<TARGET_FILE:taskflow-api>
+      ${PROJECT_SOURCE_DIR}/tests/integration
+  )
+  set_tests_properties(integration.health-endpoints PROPERTIES
+    SKIP_RETURN_CODE 77
+    RUN_SERIAL TRUE
+    TIMEOUT 30
+  )
 endif()
 
 foreach(TASKFLOW_EXECUTABLE IN ITEMS taskflow-api taskflow-worker)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -37,14 +38,24 @@ struct RequestValidation {
   std::optional<ApiError> error;
 };
 
+struct ReadinessReport {
+  bool ready;
+  std::string postgres;
+  std::string schema;
+};
+
+using ReadinessCheck = std::function<ReadinessReport()>;
+
 [[nodiscard]] std::string serialize_error(const ApiError &error);
 [[nodiscard]] bool is_json_content_type(std::string_view content_type) noexcept;
 [[nodiscard]] RequestValidation validate_request(std::string_view method, std::size_t body_size,
                                                  std::string_view content_type,
                                                  std::string_view supplied_request_id);
+[[nodiscard]] std::string serialize_liveness();
+[[nodiscard]] std::string serialize_readiness(const ReadinessReport &report);
 
 #if TASKFLOW_HAS_DROGON
-void configure_api_router(drogon::HttpAppFramework &application);
+void configure_api_router(drogon::HttpAppFramework &application, ReadinessCheck readiness_check);
 #endif
 
 } // namespace taskflow::transport::http
