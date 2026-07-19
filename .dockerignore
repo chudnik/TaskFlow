@@ -1,0 +1,10 @@
+.git
+.cache
+.codex
+build
+cmake-build-*
+openspec
+.DS_Store
+Dockerfile*
+compose*.yaml
+README.md

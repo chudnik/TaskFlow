@@ -1,0 +1,93 @@
+name: taskflow
+
+x-app-environment: &app-environment
+  TASKFLOW_POSTGRES_DSN: postgresql://taskflow:${POSTGRES_PASSWORD:-taskflow-dev}@postgres:5432/taskflow
+  TASKFLOW_REDIS_URI: redis://redis:6379
+  TASKFLOW_JWT_SIGNING_SECRET_FILE: /run/secrets/jwt_signing_secret
+  TASKFLOW_LOG_LEVEL: ${TASKFLOW_LOG_LEVEL:-info}
+
+x-app-dependencies: &app-dependencies
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  migrations:
+    condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17.10-bookworm
+    environment:
+      POSTGRES_DB: taskflow
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskflow-dev}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    image: redis:7.4.9-alpine3.21
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    environment:
+      TASKFLOW_POSTGRES_DSN: postgresql://taskflow:${POSTGRES_PASSWORD:-taskflow-dev}@postgres:5432/taskflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      target: api
+    environment: *app-environment
+    secrets:
+      - jwt_signing_secret
+    depends_on: *app-dependencies
+    ports:
+      - "${TASKFLOW_HTTP_PORT:-8080}:8080"
+    restart: "no"
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment: *app-environment
+    secrets:
+      - jwt_signing_secret
+    depends_on: *app-dependencies
+    restart: "no"
+
+  integration-tests:
+    profiles: ["test"]
+    build:
+      context: .
+      target: integration-tests
+    environment: *app-environment
+    secrets:
+      - jwt_signing_secret
+    depends_on: *app-dependencies
+
+secrets:
+  jwt_signing_secret:
+    environment: TASKFLOW_JWT_SIGNING_SECRET
+
+volumes:
+  postgres-data:

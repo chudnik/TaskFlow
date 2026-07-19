@@ -1,5 +1,6 @@
 openspec
 .*
+!/.dockerignore
 build/
 cmake-build-*/
 .cache/

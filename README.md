@@ -55,3 +55,20 @@ Runtime logs are one JSON object per line on stdout. Records include timestamp, 
 correlation ID, request route or job type, outcome, latency, message, and sanitized fields. Callers
 must classify dynamic fields as public, secret, or personal data; secret values are replaced with
 `<redacted>` and personal-data fields are omitted.
+
+## Docker Compose
+
+Export a development-only JWT secret of at least 32 bytes and start the stack:
+
+```sh
+export TASKFLOW_JWT_SIGNING_SECRET='replace-with-a-random-development-secret'
+docker compose up --build
+```
+
+The stack contains API, worker, PostgreSQL 17, ephemeral Redis 7, and a one-shot migrations
+service. PostgreSQL data is kept in the `postgres-data` volume; Redis is deliberately rebuildable.
+Run the containerized test target with:
+
+```sh
+docker compose --profile test run --build --rm integration-tests
+```
