@@ -48,3 +48,10 @@ bytes). Optional settings are `TASKFLOW_JWT_ISSUER`, `TASKFLOW_JWT_AUDIENCE`,
 Every setting may instead be loaded from a mounted file by setting its `_FILE` variant, for
 example `TASKFLOW_JWT_SIGNING_SECRET_FILE=/run/secrets/taskflow-jwt`. Setting both forms is an
 error. Startup diagnostics redact signing secrets and connection strings.
+
+## Structured logging
+
+Runtime logs are one JSON object per line on stdout. Records include timestamp, level, service,
+correlation ID, request route or job type, outcome, latency, message, and sanitized fields. Callers
+must classify dynamic fields as public, secret, or personal data; secret values are replaced with
+`<redacted>` and personal-data fields are omitted.

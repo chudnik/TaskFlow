@@ -3,7 +3,7 @@ add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)
 
-add_library(taskflow_platform STATIC platform/runtime_config.cpp)
+add_library(taskflow_platform STATIC platform/runtime_config.cpp platform/structured_logger.cpp)
 add_library(TaskFlow::platform ALIAS taskflow_platform)
 target_include_directories(taskflow_platform PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_platform)
@@ -50,8 +50,14 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
       jwt-cpp::jwt-cpp
       argon2::argon2
   )
+  target_link_libraries(taskflow_platform PRIVATE spdlog::spdlog)
+  target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=1)
   target_link_libraries(taskflow_http_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
   target_link_libraries(taskflow_websocket_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
+endif()
+
+if(NOT TASKFLOW_ENABLE_EXTERNAL_DEPS)
+  target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=0)
 endif()
 
 add_library(taskflow_service INTERFACE)

@@ -1,5 +1,6 @@
 #include "taskflow/application/module.hpp"
 #include "taskflow/platform/runtime_config.hpp"
+#include "taskflow/platform/structured_logger.hpp"
 
 #include <iostream>
 #include <string_view>
@@ -12,8 +13,11 @@ int main(int argc, char *argv[]) {
 
   try {
     const auto config = taskflow::platform::RuntimeConfig::from_environment();
-    std::cout << "TaskFlow worker scaffold (" << taskflow::application::module_name() << "; "
-              << config.redacted_diagnostics() << ")\n";
+    const taskflow::platform::StructuredLogger logger{"taskflow-worker", config.log_level};
+    logger.log("info", taskflow::platform::CorrelationContext::job("startup", "startup"), "ready",
+               0, "worker configuration loaded",
+               {{"configuration", config.redacted_diagnostics(),
+                 taskflow::platform::FieldSensitivity::public_value}});
     return 0;
   } catch (const taskflow::platform::ConfigError &error) {
     std::cerr << "configuration error: " << error.what() << '\n';
