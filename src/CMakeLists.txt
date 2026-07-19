@@ -22,6 +22,28 @@ add_library(TaskFlow::websocket_transport ALIAS taskflow_websocket_transport)
 target_include_directories(taskflow_websocket_transport PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_websocket_transport PUBLIC TaskFlow::application)
 
+if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
+  find_package(Drogon CONFIG REQUIRED)
+  find_package(PostgreSQL REQUIRED)
+  find_package(redis++ CONFIG REQUIRED)
+  find_package(spdlog CONFIG REQUIRED)
+  find_package(nlohmann_json CONFIG REQUIRED)
+  find_package(jwt-cpp CONFIG REQUIRED)
+  find_package(argon2 CONFIG REQUIRED)
+
+  target_link_libraries(taskflow_infrastructure
+    PUBLIC
+      libpq::libpq
+      redis++::redis++_static
+      spdlog::spdlog
+      nlohmann_json::nlohmann_json
+      jwt-cpp::jwt-cpp
+      argon2::argon2
+  )
+  target_link_libraries(taskflow_http_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
+  target_link_libraries(taskflow_websocket_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
+endif()
+
 add_library(taskflow_service INTERFACE)
 add_library(TaskFlow::service ALIAS taskflow_service)
 target_link_libraries(taskflow_service INTERFACE
