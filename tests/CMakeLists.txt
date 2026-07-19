@@ -6,6 +6,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
 
   add_executable(taskflow-unit-tests unit/scaffold_test.cpp)
   target_link_libraries(taskflow-unit-tests PRIVATE TaskFlow::domain GTest::gtest_main)
+  taskflow_set_project_warnings(taskflow-unit-tests)
 
   include(GoogleTest)
   gtest_discover_tests(taskflow-unit-tests)

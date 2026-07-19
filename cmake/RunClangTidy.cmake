@@ -1,0 +1,10 @@
+file(GLOB_RECURSE TASKFLOW_TIDY_FILES
+  "${CMAKE_CURRENT_LIST_DIR}/../apps/*.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../src/*.cpp"
+  "${CMAKE_CURRENT_LIST_DIR}/../tests/*.cpp"
+)
+
+execute_process(
+  COMMAND "${TASKFLOW_CLANG_TIDY}" -p "${CMAKE_CURRENT_LIST_DIR}/../build/developer" ${TASKFLOW_TIDY_FILES}
+  COMMAND_ERROR_IS_FATAL ANY
+)

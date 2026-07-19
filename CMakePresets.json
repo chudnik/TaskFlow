@@ -1,0 +1,111 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "TASKFLOW_WARNINGS_AS_ERRORS": true,
+        "TASKFLOW_BUILD_TESTS": true
+      }
+    },
+    {
+      "name": "developer",
+      "displayName": "Developer bootstrap (Debug, no external packages)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TASKFLOW_ENABLE_EXTERNAL_DEPS": false
+      }
+    },
+    {
+      "name": "conan-debug",
+      "displayName": "Developer with Conan dependencies",
+      "inherits": "base",
+      "toolchainFile": "${sourceDir}/build/conan/debug/conan_toolchain.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "TASKFLOW_ENABLE_EXTERNAL_DEPS": true
+      }
+    },
+    {
+      "name": "asan",
+      "displayName": "AddressSanitizer",
+      "inherits": "developer",
+      "cacheVariables": {
+        "TASKFLOW_ENABLE_ASAN": true
+      }
+    },
+    {
+      "name": "ubsan",
+      "displayName": "UndefinedBehaviorSanitizer",
+      "inherits": "developer",
+      "cacheVariables": {
+        "TASKFLOW_ENABLE_UBSAN": true
+      }
+    },
+    {
+      "name": "ci-debug",
+      "displayName": "CI Debug",
+      "inherits": "conan-debug"
+    },
+    {
+      "name": "ci-release",
+      "displayName": "CI Release",
+      "inherits": "base",
+      "toolchainFile": "${sourceDir}/build/conan/release/conan_toolchain.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "TASKFLOW_ENABLE_EXTERNAL_DEPS": true
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "developer", "configurePreset": "developer" },
+    { "name": "conan-debug", "configurePreset": "conan-debug" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "ubsan", "configurePreset": "ubsan" },
+    { "name": "ci-debug", "configurePreset": "ci-debug", "jobs": 2 },
+    { "name": "ci-release", "configurePreset": "ci-release", "jobs": 2 }
+  ],
+  "testPresets": [
+    {
+      "name": "developer",
+      "configurePreset": "developer",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "conan-debug",
+      "configurePreset": "conan-debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "ubsan",
+      "configurePreset": "ubsan",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "ci-debug",
+      "configurePreset": "ci-debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "ci-release",
+      "configurePreset": "ci-release",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

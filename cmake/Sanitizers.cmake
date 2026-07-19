@@ -1,0 +1,17 @@
+function(taskflow_enable_sanitizers)
+  if(TASKFLOW_ENABLE_ASAN AND TASKFLOW_ENABLE_UBSAN)
+    message(FATAL_ERROR "Enable only one sanitizer preset at a time")
+  endif()
+
+  if(MSVC AND (TASKFLOW_ENABLE_ASAN OR TASKFLOW_ENABLE_UBSAN))
+    message(FATAL_ERROR "The current sanitizer presets support Clang and GCC")
+  endif()
+
+  if(TASKFLOW_ENABLE_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+  elseif(TASKFLOW_ENABLE_UBSAN)
+    add_compile_options(-fsanitize=undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=undefined)
+  endif()
+endfunction()

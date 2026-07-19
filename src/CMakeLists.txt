@@ -1,26 +1,31 @@
 add_library(taskflow_domain STATIC domain/module.cpp)
 add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
+taskflow_set_project_warnings(taskflow_domain)
 
 add_library(taskflow_application STATIC application/module.cpp)
 add_library(TaskFlow::application ALIAS taskflow_application)
 target_include_directories(taskflow_application PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_application PUBLIC TaskFlow::domain)
+taskflow_set_project_warnings(taskflow_application)
 
 add_library(taskflow_infrastructure STATIC infrastructure/module.cpp)
 add_library(TaskFlow::infrastructure ALIAS taskflow_infrastructure)
 target_include_directories(taskflow_infrastructure PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_infrastructure PUBLIC TaskFlow::application)
+taskflow_set_project_warnings(taskflow_infrastructure)
 
 add_library(taskflow_http_transport STATIC transport/http/module.cpp)
 add_library(TaskFlow::http_transport ALIAS taskflow_http_transport)
 target_include_directories(taskflow_http_transport PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_http_transport PUBLIC TaskFlow::application)
+taskflow_set_project_warnings(taskflow_http_transport)
 
 add_library(taskflow_websocket_transport STATIC transport/websocket/module.cpp)
 add_library(TaskFlow::websocket_transport ALIAS taskflow_websocket_transport)
 target_include_directories(taskflow_websocket_transport PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_websocket_transport PUBLIC TaskFlow::application)
+taskflow_set_project_warnings(taskflow_websocket_transport)
 
 if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   find_package(Drogon CONFIG REQUIRED)
