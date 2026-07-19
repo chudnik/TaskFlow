@@ -16,6 +16,7 @@ taskflow_set_project_warnings(taskflow_application)
 
 add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
+  infrastructure/postgres.cpp
   infrastructure/schema_compatibility.cpp
 )
 add_library(TaskFlow::infrastructure ALIAS taskflow_infrastructure)

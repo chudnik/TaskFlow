@@ -22,6 +22,18 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
 
   include(GoogleTest)
   gtest_discover_tests(taskflow-unit-tests)
+
+  add_executable(taskflow-postgres-integration-tests
+    integration/postgres_foundation_test.cpp
+  )
+  target_link_libraries(taskflow-postgres-integration-tests PRIVATE
+    TaskFlow::infrastructure
+    GTest::gtest_main
+  )
+  taskflow_set_project_warnings(taskflow-postgres-integration-tests)
+  gtest_discover_tests(taskflow-postgres-integration-tests
+    TEST_PREFIX "integration."
+  )
 endif()
 
 foreach(TASKFLOW_EXECUTABLE IN ITEMS taskflow-api taskflow-worker)
