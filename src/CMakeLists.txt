@@ -1,4 +1,4 @@
-add_library(taskflow_domain STATIC domain/module.cpp)
+add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp)
 add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)

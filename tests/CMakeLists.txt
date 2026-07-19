@@ -10,6 +10,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/runtime_config_test.cpp
     unit/structured_logger_test.cpp
     unit/schema_compatibility_test.cpp
+    unit/common_primitives_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
