@@ -2,6 +2,11 @@
 #include "taskflow/infrastructure/schema_compatibility.hpp"
 #include "taskflow/platform/runtime_config.hpp"
 #include "taskflow/platform/structured_logger.hpp"
+#include "taskflow/transport/http/api_router.hpp"
+
+#if TASKFLOW_HAS_DROGON
+#include <drogon/HttpAppFramework.h>
+#endif
 
 #include <iostream>
 #include <string_view>
@@ -24,6 +29,11 @@ int main(int argc, char *argv[]) {
                "ready", 0, "service configuration loaded",
                {{"configuration", config.redacted_diagnostics(),
                  taskflow::platform::FieldSensitivity::public_value}});
+#if TASKFLOW_HAS_DROGON
+    auto &application = drogon::app();
+    taskflow::transport::http::configure_api_router(application);
+    application.addListener(config.http_address, config.http_port).run();
+#endif
     return 0;
   } catch (const taskflow::platform::ConfigError &error) {
     std::cerr << "configuration error: " << error.what() << '\n';

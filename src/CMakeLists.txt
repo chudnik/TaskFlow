@@ -24,10 +24,16 @@ target_include_directories(taskflow_infrastructure PUBLIC "${PROJECT_SOURCE_DIR}
 target_link_libraries(taskflow_infrastructure PUBLIC TaskFlow::application)
 taskflow_set_project_warnings(taskflow_infrastructure)
 
-add_library(taskflow_http_transport STATIC transport/http/module.cpp)
+add_library(taskflow_http_contract STATIC transport/http/api_contract.cpp)
+add_library(TaskFlow::http_contract ALIAS taskflow_http_contract)
+target_include_directories(taskflow_http_contract PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(taskflow_http_contract PUBLIC TaskFlow::domain)
+taskflow_set_project_warnings(taskflow_http_contract)
+
+add_library(taskflow_http_transport STATIC transport/http/module.cpp transport/http/api_router.cpp)
 add_library(TaskFlow::http_transport ALIAS taskflow_http_transport)
 target_include_directories(taskflow_http_transport PUBLIC "${PROJECT_SOURCE_DIR}/include")
-target_link_libraries(taskflow_http_transport PUBLIC TaskFlow::application)
+target_link_libraries(taskflow_http_transport PUBLIC TaskFlow::application TaskFlow::http_contract)
 taskflow_set_project_warnings(taskflow_http_transport)
 
 add_library(taskflow_websocket_transport STATIC transport/websocket/module.cpp)
@@ -58,12 +64,14 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   target_link_libraries(taskflow_platform PRIVATE spdlog::spdlog)
   target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=1)
   target_link_libraries(taskflow_http_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
+  target_compile_definitions(taskflow_http_transport PUBLIC TASKFLOW_HAS_DROGON=1)
   target_link_libraries(taskflow_websocket_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
 endif()
 
 if(NOT TASKFLOW_ENABLE_EXTERNAL_DEPS)
   target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=0)
   target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_POSTGRES=0)
+  target_compile_definitions(taskflow_http_transport PUBLIC TASKFLOW_HAS_DROGON=0)
 endif()
 
 add_library(taskflow_service INTERFACE)

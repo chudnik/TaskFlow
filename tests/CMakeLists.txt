@@ -11,11 +11,13 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/structured_logger_test.cpp
     unit/schema_compatibility_test.cpp
     unit/common_primitives_test.cpp
+    unit/api_router_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
     TaskFlow::platform
     TaskFlow::infrastructure
+    TaskFlow::http_contract
     GTest::gtest_main
     nlohmann_json::nlohmann_json
   )
