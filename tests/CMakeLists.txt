@@ -4,10 +4,19 @@ add_test(NAME taskflow-worker-version COMMAND taskflow-worker --version)
 if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   find_package(GTest CONFIG REQUIRED)
 
-  add_executable(taskflow-unit-tests unit/scaffold_test.cpp)
-  target_link_libraries(taskflow-unit-tests PRIVATE TaskFlow::domain GTest::gtest_main)
+  add_executable(taskflow-unit-tests unit/scaffold_test.cpp unit/runtime_config_test.cpp)
+  target_link_libraries(taskflow-unit-tests PRIVATE TaskFlow::domain TaskFlow::platform GTest::gtest_main)
   taskflow_set_project_warnings(taskflow-unit-tests)
 
   include(GoogleTest)
   gtest_discover_tests(taskflow-unit-tests)
 endif()
+
+foreach(TASKFLOW_EXECUTABLE IN ITEMS taskflow-api taskflow-worker)
+  add_test(
+    NAME ${TASKFLOW_EXECUTABLE}-missing-signing-secret
+    COMMAND ${CMAKE_COMMAND}
+      -DTASKFLOW_EXECUTABLE=$<TARGET_FILE:${TASKFLOW_EXECUTABLE}>
+      -P ${PROJECT_SOURCE_DIR}/cmake/ExpectStartupFailure.cmake
+  )
+endforeach()

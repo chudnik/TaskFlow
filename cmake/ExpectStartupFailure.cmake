@@ -1,0 +1,20 @@
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E env
+    --unset=TASKFLOW_JWT_SIGNING_SECRET
+    --unset=TASKFLOW_JWT_SIGNING_SECRET_FILE
+    TASKFLOW_POSTGRES_DSN=postgresql://localhost/taskflow
+    TASKFLOW_REDIS_URI=redis://localhost:6379
+    "${TASKFLOW_EXECUTABLE}"
+  RESULT_VARIABLE TASKFLOW_RESULT
+  OUTPUT_VARIABLE TASKFLOW_STDOUT
+  ERROR_VARIABLE TASKFLOW_STDERR
+)
+
+if(TASKFLOW_RESULT EQUAL 0)
+  message(FATAL_ERROR "${TASKFLOW_EXECUTABLE} unexpectedly accepted invalid configuration")
+endif()
+
+set(TASKFLOW_EXPECTED_ERROR "configuration error: TASKFLOW_JWT_SIGNING_SECRET is required")
+if(NOT TASKFLOW_STDERR MATCHES "${TASKFLOW_EXPECTED_ERROR}")
+  message(FATAL_ERROR "${TASKFLOW_EXECUTABLE} did not emit the expected sanitized error")
+endif()

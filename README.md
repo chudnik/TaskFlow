@@ -37,3 +37,14 @@ Release CI uses the same flow with `build/conan/release`, `build_type=Release`, 
 
 Quality targets are `format`, `format-check`, and `tidy`. Sanitizer builds use the `asan` and
 `ubsan` presets.
+
+## Runtime configuration
+
+Both `taskflow-api` and `taskflow-worker` validate configuration before startup. Required values
+are `TASKFLOW_POSTGRES_DSN`, `TASKFLOW_REDIS_URI`, and `TASKFLOW_JWT_SIGNING_SECRET` (at least 32
+bytes). Optional settings are `TASKFLOW_JWT_ISSUER`, `TASKFLOW_JWT_AUDIENCE`,
+`TASKFLOW_HTTP_ADDRESS`, `TASKFLOW_HTTP_PORT`, and `TASKFLOW_LOG_LEVEL`.
+
+Every setting may instead be loaded from a mounted file by setting its `_FILE` variant, for
+example `TASKFLOW_JWT_SIGNING_SECRET_FILE=/run/secrets/taskflow-jwt`. Setting both forms is an
+error. Startup diagnostics redact signing secrets and connection strings.

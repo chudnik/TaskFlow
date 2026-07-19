@@ -3,6 +3,11 @@ add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)
 
+add_library(taskflow_platform STATIC platform/runtime_config.cpp)
+add_library(TaskFlow::platform ALIAS taskflow_platform)
+target_include_directories(taskflow_platform PUBLIC "${PROJECT_SOURCE_DIR}/include")
+taskflow_set_project_warnings(taskflow_platform)
+
 add_library(taskflow_application STATIC application/module.cpp)
 add_library(TaskFlow::application ALIAS taskflow_application)
 target_include_directories(taskflow_application PUBLIC "${PROJECT_SOURCE_DIR}/include")
@@ -52,6 +57,7 @@ endif()
 add_library(taskflow_service INTERFACE)
 add_library(TaskFlow::service ALIAS taskflow_service)
 target_link_libraries(taskflow_service INTERFACE
+  TaskFlow::platform
   TaskFlow::domain
   TaskFlow::application
   TaskFlow::infrastructure

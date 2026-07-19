@@ -1,4 +1,5 @@
 #include "taskflow/application/module.hpp"
+#include "taskflow/platform/runtime_config.hpp"
 
 #include <iostream>
 #include <string_view>
@@ -9,6 +10,13 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::cout << "TaskFlow worker scaffold (" << taskflow::application::module_name() << ")\n";
-  return 0;
+  try {
+    const auto config = taskflow::platform::RuntimeConfig::from_environment();
+    std::cout << "TaskFlow worker scaffold (" << taskflow::application::module_name() << "; "
+              << config.redacted_diagnostics() << ")\n";
+    return 0;
+  } catch (const taskflow::platform::ConfigError &error) {
+    std::cerr << "configuration error: " << error.what() << '\n';
+    return 2;
+  }
 }
