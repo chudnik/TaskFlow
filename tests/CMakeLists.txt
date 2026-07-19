@@ -9,10 +9,12 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/scaffold_test.cpp
     unit/runtime_config_test.cpp
     unit/structured_logger_test.cpp
+    unit/schema_compatibility_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
     TaskFlow::platform
+    TaskFlow::infrastructure
     GTest::gtest_main
     nlohmann_json::nlohmann_json
   )

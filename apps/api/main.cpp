@@ -1,4 +1,5 @@
 #include "taskflow/domain/module.hpp"
+#include "taskflow/infrastructure/schema_compatibility.hpp"
 #include "taskflow/platform/runtime_config.hpp"
 #include "taskflow/platform/structured_logger.hpp"
 
@@ -13,6 +14,11 @@ int main(int argc, char *argv[]) {
 
   try {
     const auto config = taskflow::platform::RuntimeConfig::from_environment();
+    const auto schema = taskflow::infrastructure::check_postgres_schema(config.postgres_dsn);
+    if (!schema.is_compatible()) {
+      std::cerr << "schema compatibility error: " << schema.message() << '\n';
+      return 3;
+    }
     const taskflow::platform::StructuredLogger logger{"taskflow-api", config.log_level};
     logger.log("info", taskflow::platform::CorrelationContext::request("startup", "startup"),
                "ready", 0, "service configuration loaded",
@@ -22,5 +28,8 @@ int main(int argc, char *argv[]) {
   } catch (const taskflow::platform::ConfigError &error) {
     std::cerr << "configuration error: " << error.what() << '\n';
     return 2;
+  } catch (const std::exception &error) {
+    std::cerr << "startup dependency error: " << error.what() << '\n';
+    return 3;
   }
 }

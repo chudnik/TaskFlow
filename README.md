@@ -67,6 +67,9 @@ docker compose up --build
 
 The stack contains API, worker, PostgreSQL 17, ephemeral Redis 7, and a one-shot migrations
 service. PostgreSQL data is kept in the `postgres-data` volume; Redis is deliberately rebuildable.
+The migration service must finish before API or worker startup. Both processes independently
+verify that the database migration metadata exists, no migration runner holds the advisory lock,
+and the schema version exactly matches the binary's expected version.
 Run the containerized test target with:
 
 ```sh
