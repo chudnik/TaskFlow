@@ -58,4 +58,13 @@ bool PasswordHasher::verify(const std::string_view password,
 #endif
 }
 
+std::string PasswordHasher::hash_password(const std::string_view password) const {
+  return hash(password);
+}
+
+bool PasswordHasher::verify_password(const std::string_view password,
+                                     const std::string_view encoded_hash) const noexcept {
+  return verify(password, encoded_hash);
+}
+
 } // namespace taskflow::infrastructure

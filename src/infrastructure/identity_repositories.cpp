@@ -73,6 +73,18 @@ domain::User UserRepository::create(std::string normalized_email, std::string pa
   return user_from(result);
 }
 
+domain::User UserRepository::create_user(std::string normalized_email, std::string password_hash) {
+  try {
+    return create(std::move(normalized_email), std::move(password_hash));
+  } catch (const RepositoryError &error) {
+    if (error.code() == RepositoryErrorCode::conflict) {
+      throw application::IdentityError{application::IdentityErrorCode::duplicate_email,
+                                       "email is already registered"};
+    }
+    throw;
+  }
+}
+
 std::optional<domain::User> UserRepository::find_by_id(const domain::Uuid &id) {
   const auto result = connection_->execute("SELECT " + std::string{user_columns} +
                                                " FROM users WHERE id = $1::uuid",
@@ -90,6 +102,15 @@ UserRepository::find_credentials_by_email(const std::string_view normalized_emai
              ? std::nullopt
              : std::optional<UserCredentialRecord>{
                    UserCredentialRecord{user_from(result), required(result, 0, 6)}};
+}
+
+std::optional<application::StoredCredential>
+UserRepository::find_credentials(const std::string_view normalized_email) {
+  auto record = find_credentials_by_email(normalized_email);
+  if (!record) {
+    return std::nullopt;
+  }
+  return application::StoredCredential{std::move(record->user), std::move(record->password_hash)};
 }
 
 SessionRepository::SessionRepository(PostgresConnection &connection) : connection_{&connection} {}

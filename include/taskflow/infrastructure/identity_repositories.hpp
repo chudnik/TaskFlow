@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taskflow/application/identity.hpp"
 #include "taskflow/domain/identity_models.hpp"
 #include "taskflow/infrastructure/postgres.hpp"
 
@@ -19,13 +20,17 @@ struct SessionCredentialRecord {
   std::string refresh_token_hash;
 };
 
-class UserRepository {
+class UserRepository final : public application::IdentityStore {
 public:
   explicit UserRepository(PostgresConnection &connection);
   [[nodiscard]] domain::User create(std::string normalized_email, std::string password_hash);
+  [[nodiscard]] domain::User create_user(std::string normalized_email,
+                                         std::string password_hash) override;
   [[nodiscard]] std::optional<domain::User> find_by_id(const domain::Uuid &id);
   [[nodiscard]] std::optional<UserCredentialRecord>
   find_credentials_by_email(std::string_view normalized_email);
+  [[nodiscard]] std::optional<application::StoredCredential>
+  find_credentials(std::string_view normalized_email) override;
 
 private:
   PostgresConnection *connection_;
