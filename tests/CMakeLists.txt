@@ -18,6 +18,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/jwt_access_token_test.cpp
     unit/refresh_tokens_test.cpp
     unit/authentication_middleware_test.cpp
+    unit/authorization_policy_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
