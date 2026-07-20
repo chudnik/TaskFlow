@@ -13,6 +13,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/common_primitives_test.cpp
     unit/api_router_test.cpp
     unit/identity_security_test.cpp
+    unit/identity_model_boundary_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain

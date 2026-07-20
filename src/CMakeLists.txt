@@ -16,6 +16,7 @@ taskflow_set_project_warnings(taskflow_application)
 
 add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
+  infrastructure/identity_repositories.cpp
   infrastructure/postgres.cpp
   infrastructure/password_hasher.cpp
   infrastructure/schema_compatibility.cpp
