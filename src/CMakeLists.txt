@@ -1,4 +1,4 @@
-add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp)
+add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp domain/identity.cpp)
 add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)
@@ -17,6 +17,7 @@ taskflow_set_project_warnings(taskflow_application)
 add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
   infrastructure/postgres.cpp
+  infrastructure/password_hasher.cpp
   infrastructure/schema_compatibility.cpp
 )
 add_library(TaskFlow::infrastructure ALIAS taskflow_infrastructure)
@@ -61,6 +62,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
       argon2::argon2
   )
   target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_POSTGRES=1)
+  target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_ARGON2=1)
   target_link_libraries(taskflow_platform PRIVATE spdlog::spdlog)
   target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=1)
   target_link_libraries(taskflow_http_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
@@ -71,6 +73,7 @@ endif()
 if(NOT TASKFLOW_ENABLE_EXTERNAL_DEPS)
   target_compile_definitions(taskflow_platform PRIVATE TASKFLOW_HAS_SPDLOG=0)
   target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_POSTGRES=0)
+  target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_ARGON2=0)
   target_compile_definitions(taskflow_http_transport PUBLIC TASKFLOW_HAS_DROGON=0)
 endif()
 
