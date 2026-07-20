@@ -79,6 +79,15 @@ resolve_value(std::string_view name, const RuntimeConfig::EnvironmentLookup &env
   return static_cast<std::uint16_t>(port);
 }
 
+[[nodiscard]] std::uint32_t parse_positive(std::string_view name, const std::string &value) {
+  std::uint32_t parsed = 0;
+  const auto result = std::from_chars(value.data(), value.data() + value.size(), parsed);
+  if (result.ec != std::errc{} || result.ptr != value.data() + value.size() || parsed == 0) {
+    throw ConfigError{std::string{name} + " must be a positive integer"};
+  }
+  return parsed;
+}
+
 void validate_log_level(const std::string &level) {
   constexpr std::array<std::string_view, 6> levels{"trace", "debug", "info",
                                                    "warn",  "error", "critical"};
@@ -122,6 +131,15 @@ RuntimeConfig RuntimeConfig::load(const EnvironmentLookup &environment,
       .http_address = value_or("TASKFLOW_HTTP_ADDRESS", "0.0.0.0", environment, read_file),
       .http_port = parse_port(value_or("TASKFLOW_HTTP_PORT", "8080", environment, read_file)),
       .log_level = value_or("TASKFLOW_LOG_LEVEL", "info", environment, read_file),
+      .login_rate_limit = parse_positive(
+          "TASKFLOW_LOGIN_RATE_LIMIT",
+          value_or("TASKFLOW_LOGIN_RATE_LIMIT", "10", environment, read_file)),
+      .refresh_rate_limit = parse_positive(
+          "TASKFLOW_REFRESH_RATE_LIMIT",
+          value_or("TASKFLOW_REFRESH_RATE_LIMIT", "30", environment, read_file)),
+      .rate_limit_window_seconds = parse_positive(
+          "TASKFLOW_RATE_LIMIT_WINDOW_SECONDS",
+          value_or("TASKFLOW_RATE_LIMIT_WINDOW_SECONDS", "60", environment, read_file)),
   };
 
   if (config.jwt_signing_secret.size() < 32) {
@@ -137,6 +155,9 @@ std::string RuntimeConfig::redacted_diagnostics() const {
          << ", jwt_issuer=" << jwt_issuer << ", jwt_audience=" << jwt_audience
          << ", http_address=" << http_address << ", http_port=" << http_port
          << ", log_level=" << log_level;
+  output << ", login_rate_limit=" << login_rate_limit
+         << ", refresh_rate_limit=" << refresh_rate_limit
+         << ", rate_limit_window_seconds=" << rate_limit_window_seconds;
   return output.str();
 }
 

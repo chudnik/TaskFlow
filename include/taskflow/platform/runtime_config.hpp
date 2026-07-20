@@ -27,6 +27,9 @@ struct RuntimeConfig {
   std::string http_address;
   std::uint16_t http_port;
   std::string log_level;
+  std::uint32_t login_rate_limit;
+  std::uint32_t refresh_rate_limit;
+  std::uint32_t rate_limit_window_seconds;
 
   [[nodiscard]] static RuntimeConfig from_environment();
   [[nodiscard]] static RuntimeConfig load(const EnvironmentLookup &environment,

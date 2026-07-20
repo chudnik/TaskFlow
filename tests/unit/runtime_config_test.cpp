@@ -37,6 +37,9 @@ TEST(RuntimeConfigTest, LoadsValidatedValuesAndDefaults) {
   EXPECT_EQ(config.http_port, 8080);
   EXPECT_EQ(config.jwt_issuer, "taskflow");
   EXPECT_EQ(config.log_level, "info");
+  EXPECT_EQ(config.login_rate_limit, 10U);
+  EXPECT_EQ(config.refresh_rate_limit, 30U);
+  EXPECT_EQ(config.rate_limit_window_seconds, 60U);
 }
 
 TEST(RuntimeConfigTest, ReadsSecretFromMountedFileAndStripsLineEnding) {
