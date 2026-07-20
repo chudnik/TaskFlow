@@ -17,7 +17,7 @@ BEGIN
   END IF;
 
   IF (SELECT max(version) FROM taskflow_schema_migrations) <> 1 THEN
-    RAISE EXCEPTION 'expected schema version 1';
+    RAISE EXCEPTION 'expected schema version 2';
   END IF;
 END;
 $$;

@@ -18,6 +18,7 @@ add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
   infrastructure/identity_repositories.cpp
   infrastructure/jwt_access_token.cpp
+  infrastructure/refresh_tokens.cpp
   infrastructure/postgres.cpp
   infrastructure/password_hasher.cpp
   infrastructure/schema_compatibility.cpp
@@ -63,6 +64,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
       nlohmann_json::nlohmann_json
       jwt-cpp::jwt-cpp
       argon2::argon2
+      OpenSSL::Crypto
   )
   target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_POSTGRES=1)
   target_compile_definitions(taskflow_infrastructure PRIVATE TASKFLOW_HAS_ARGON2=1)

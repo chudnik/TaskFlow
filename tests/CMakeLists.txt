@@ -16,6 +16,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/identity_model_boundary_test.cpp
     unit/identity_use_cases_test.cpp
     unit/jwt_access_token_test.cpp
+    unit/refresh_tokens_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
@@ -32,6 +33,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
 
   add_executable(taskflow-postgres-integration-tests
     integration/postgres_foundation_test.cpp
+    integration/refresh_token_rotation_test.cpp
   )
   target_link_libraries(taskflow-postgres-integration-tests PRIVATE
     TaskFlow::infrastructure
