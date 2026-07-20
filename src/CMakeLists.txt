@@ -8,7 +8,8 @@ add_library(TaskFlow::platform ALIAS taskflow_platform)
 target_include_directories(taskflow_platform PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_platform)
 
-add_library(taskflow_application STATIC application/module.cpp application/identity.cpp)
+add_library(taskflow_application STATIC application/module.cpp application/identity.cpp
+  application/authentication_middleware.cpp)
 add_library(TaskFlow::application ALIAS taskflow_application)
 target_include_directories(taskflow_application PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_application PUBLIC TaskFlow::domain)
