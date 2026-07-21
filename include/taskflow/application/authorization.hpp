@@ -1,12 +1,13 @@
 #pragma once
 
 #include "taskflow/domain/identity_models.hpp"
+#include "taskflow/domain/project.hpp"
 
 #include <optional>
 
 namespace taskflow::application {
 
-enum class ProjectRole { owner, manager, member };
+using ProjectRole = domain::ProjectRole;
 
 enum class ProjectAction {
   read_project,

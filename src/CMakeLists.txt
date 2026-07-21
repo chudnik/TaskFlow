@@ -1,4 +1,5 @@
-add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp domain/identity.cpp)
+add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp domain/identity.cpp
+  domain/project.cpp)
 add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)
@@ -20,6 +21,7 @@ taskflow_set_project_warnings(taskflow_application)
 add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
   infrastructure/identity_repositories.cpp
+  infrastructure/project_repositories.cpp
   infrastructure/jwt_access_token.cpp
   infrastructure/refresh_tokens.cpp
   infrastructure/redis_rate_limit.cpp

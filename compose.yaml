@@ -80,7 +80,9 @@ services:
     build:
       context: .
       target: integration-tests
-    environment: *app-environment
+    environment:
+      <<: *app-environment
+      TASKFLOW_TEST_POSTGRES_DSN: postgresql://taskflow:${POSTGRES_PASSWORD:-taskflow-dev}@postgres:5432/taskflow
     secrets:
       - jwt_signing_secret
     depends_on: *app-dependencies

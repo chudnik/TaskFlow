@@ -20,6 +20,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/authentication_middleware_test.cpp
     unit/authorization_policy_test.cpp
     unit/rate_limiter_test.cpp
+    unit/project_model_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
@@ -37,6 +38,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   add_executable(taskflow-postgres-integration-tests
     integration/postgres_foundation_test.cpp
     integration/refresh_token_rotation_test.cpp
+    integration/project_repositories_test.cpp
   )
   target_link_libraries(taskflow-postgres-integration-tests PRIVATE
     TaskFlow::infrastructure
