@@ -13,6 +13,7 @@ add_library(taskflow_application STATIC application/module.cpp application/ident
   application/authentication_middleware.cpp)
 target_sources(taskflow_application PRIVATE application/authorization.cpp)
 target_sources(taskflow_application PRIVATE application/rate_limiter.cpp)
+target_sources(taskflow_application PRIVATE application/projects.cpp)
 add_library(TaskFlow::application ALIAS taskflow_application)
 target_include_directories(taskflow_application PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_application PUBLIC TaskFlow::domain)
@@ -35,7 +36,7 @@ target_link_libraries(taskflow_infrastructure PUBLIC TaskFlow::application)
 taskflow_set_project_warnings(taskflow_infrastructure)
 
 add_library(taskflow_http_contract STATIC transport/http/api_contract.cpp
-  transport/http/identity_controller.cpp)
+  transport/http/identity_controller.cpp transport/http/project_controller.cpp)
 add_library(TaskFlow::http_contract ALIAS taskflow_http_contract)
 target_include_directories(taskflow_http_contract PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_http_contract PUBLIC TaskFlow::application)

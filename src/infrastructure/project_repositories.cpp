@@ -113,12 +113,75 @@ domain::Project ProjectRepository::create_with_owner(std::string name, std::stri
   return project_from(result);
 }
 
+domain::Project ProjectRepository::create_project(std::string name, std::string description,
+                                                  const domain::Uuid &owner_id) {
+  return create_with_owner(std::move(name), std::move(description), owner_id);
+}
+
 std::optional<domain::Project> ProjectRepository::find_by_id(const domain::Uuid &project_id) {
   const auto result = connection_->execute("SELECT " + std::string{project_columns} +
                                                " FROM projects WHERE id = $1::uuid",
                                            {project_id.to_string()});
   return result.row_count() == 0 ? std::nullopt
                                  : std::optional<domain::Project>{project_from(result)};
+}
+
+std::optional<domain::Project> ProjectRepository::find_project(const domain::Uuid &project_id) {
+  return find_by_id(project_id);
+}
+
+std::optional<domain::ProjectRole> ProjectRepository::find_role(const domain::Uuid &project_id,
+                                                                const domain::Uuid &user_id) {
+  const auto result = connection_->execute(
+      "SELECT role FROM project_members WHERE project_id = $1::uuid AND user_id = $2::uuid",
+      {project_id.to_string(), user_id.to_string()});
+  return result.row_count() == 0 ? std::nullopt
+                                 : domain::parse_project_role(required(result, 0, 0));
+}
+
+domain::Project ProjectRepository::update_project(const domain::Uuid &project_id, std::string name,
+                                                  std::string description) {
+  const auto result = connection_->execute(
+      "UPDATE projects SET name = $2, description = $3, updated_at = clock_timestamp() "
+      "WHERE id = $1::uuid AND archived_at IS NULL RETURNING " +
+          std::string{project_columns},
+      {project_id.to_string(), std::move(name), std::move(description)});
+  if (result.row_count() == 0) {
+    throw RepositoryError{RepositoryErrorCode::not_found, "active project not found"};
+  }
+  return project_from(result);
+}
+
+domain::Project ProjectRepository::archive_project(const domain::Uuid &project_id,
+                                                   const domain::Uuid &actor_id) {
+  const auto result = connection_->execute(
+      "UPDATE projects SET archived_at = clock_timestamp(), archived_by = $2::uuid, "
+      "updated_at = clock_timestamp() WHERE id = $1::uuid AND archived_at IS NULL RETURNING " +
+          std::string{project_columns},
+      {project_id.to_string(), actor_id.to_string()});
+  if (result.row_count() == 0) {
+    throw RepositoryError{RepositoryErrorCode::not_found, "active project not found"};
+  }
+  return project_from(result);
+}
+
+std::vector<domain::Project> ProjectRepository::list_projects(const domain::Uuid &user_id,
+                                                              const bool include_all) {
+  const auto result =
+      include_all
+          ? connection_->execute("SELECT " + std::string{project_columns} +
+                                 " FROM projects ORDER BY updated_at DESC, id")
+          : connection_->execute("SELECT " + std::string{project_columns} +
+                                     " FROM projects p WHERE EXISTS (SELECT 1 FROM project_members "
+                                     "pm WHERE pm.project_id = p.id AND pm.user_id = $1::uuid) "
+                                     "ORDER BY updated_at DESC, id",
+                                 {user_id.to_string()});
+  std::vector<domain::Project> projects;
+  projects.reserve(result.row_count());
+  for (std::size_t row = 0; row < result.row_count(); ++row) {
+    projects.push_back(project_from(result, row));
+  }
+  return projects;
 }
 
 ProjectMembershipRepository::ProjectMembershipRepository(PostgresConnection &connection)

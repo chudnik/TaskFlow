@@ -66,4 +66,28 @@ TEST(ProjectRepositoriesIntegration, RefusesToRemoveOrDemoteFinalOwner) {
   EXPECT_EQ(remaining.front().role, domain::ProjectRole::owner);
 }
 
+TEST(ProjectRepositoriesIntegration, UpdatesArchivesAndListsVisibleProjects) {
+  const auto dsn = integration_dsn();
+  if (dsn.empty()) {
+    GTEST_SKIP() << "TASKFLOW_TEST_POSTGRES_DSN is not configured";
+  }
+  infrastructure::PostgresConnection connection{dsn};
+  static_cast<void>(connection.execute("SET taskflow.test_database = 'on'"));
+  infrastructure::reset_database_for_tests(connection);
+  const auto owner = insert_user(connection, "lifecycle-owner@example.com");
+  const auto outsider = insert_user(connection, "lifecycle-outsider@example.com");
+  infrastructure::ProjectRepository projects{connection};
+  const auto created = projects.create_project("Initial", "Description", owner);
+
+  EXPECT_EQ(projects.list_projects(owner, false).size(), 1U);
+  EXPECT_TRUE(projects.list_projects(outsider, false).empty());
+  const auto updated = projects.update_project(created.id, "Updated", "New description");
+  EXPECT_EQ(updated.name, "Updated");
+  const auto archived = projects.archive_project(created.id, owner);
+  EXPECT_TRUE(archived.archived());
+  EXPECT_EQ(archived.archived_by, owner);
+  EXPECT_THROW(static_cast<void>(projects.update_project(created.id, "Again", "Rejected")),
+               infrastructure::RepositoryError);
+}
+
 } // namespace

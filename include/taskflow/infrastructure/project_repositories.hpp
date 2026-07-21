@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taskflow/application/projects.hpp"
 #include "taskflow/domain/project.hpp"
 #include "taskflow/infrastructure/postgres.hpp"
 
@@ -9,13 +10,25 @@
 
 namespace taskflow::infrastructure {
 
-class ProjectRepository {
+class ProjectRepository final : public application::ProjectStore {
 public:
   explicit ProjectRepository(PostgresConnection &connection);
 
   [[nodiscard]] domain::Project create_with_owner(std::string name, std::string description,
                                                   const domain::Uuid &owner_id);
+  [[nodiscard]] domain::Project create_project(std::string name, std::string description,
+                                               const domain::Uuid &owner_id) override;
   [[nodiscard]] std::optional<domain::Project> find_by_id(const domain::Uuid &project_id);
+  [[nodiscard]] std::optional<domain::Project>
+  find_project(const domain::Uuid &project_id) override;
+  [[nodiscard]] std::optional<domain::ProjectRole> find_role(const domain::Uuid &project_id,
+                                                             const domain::Uuid &user_id) override;
+  [[nodiscard]] domain::Project update_project(const domain::Uuid &project_id, std::string name,
+                                               std::string description) override;
+  [[nodiscard]] domain::Project archive_project(const domain::Uuid &project_id,
+                                                const domain::Uuid &actor_id) override;
+  [[nodiscard]] std::vector<domain::Project> list_projects(const domain::Uuid &user_id,
+                                                           bool include_all) override;
 
 private:
   PostgresConnection *connection_;

@@ -21,6 +21,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/authorization_policy_test.cpp
     unit/rate_limiter_test.cpp
     unit/project_model_test.cpp
+    unit/project_use_cases_test.cpp
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
