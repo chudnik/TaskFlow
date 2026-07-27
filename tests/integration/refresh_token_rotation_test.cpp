@@ -14,9 +14,9 @@ std::string integration_dsn() {
 
 domain::Uuid insert_user(infrastructure::PostgresConnection &connection) {
   const auto id = domain::Uuid::generate();
-  static_cast<void>(connection.execute(
-      "INSERT INTO users(id, email, password_hash) VALUES($1::uuid, $2, $3)",
-      {id.to_string(), "refresh@example.com", "not-a-public-credential"}));
+  static_cast<void>(
+      connection.execute("INSERT INTO users(id, email, password_hash) VALUES($1::uuid, $2, $3)",
+                         {id.to_string(), "refresh@example.com", "not-a-public-credential"}));
   return id;
 }
 
@@ -30,8 +30,8 @@ TEST(RefreshTokenIntegration, RotatesOnceAndReplayRevokesTokenFamily) {
   infrastructure::reset_database_for_tests(connection);
   const auto user_id = insert_user(connection);
   infrastructure::RefreshTokenService tokens{connection};
-  const auto issued = tokens.create_session(
-      user_id, domain::SystemClock{}.now() + std::chrono::hours{24});
+  const auto issued =
+      tokens.create_session(user_id, domain::SystemClock{}.now() + std::chrono::hours{24});
   const auto rotated = tokens.rotate(issued.token);
   ASSERT_EQ(rotated.status, infrastructure::RefreshRotationStatus::rotated);
   ASSERT_TRUE(rotated.issued);
@@ -57,8 +57,8 @@ TEST(RefreshTokenIntegration, LogoutRevokesSessionToken) {
   static_cast<void>(connection.execute("SET taskflow.test_database = 'on'"));
   infrastructure::reset_database_for_tests(connection);
   infrastructure::RefreshTokenService tokens{connection};
-  const auto issued = tokens.create_session(
-      insert_user(connection), domain::SystemClock{}.now() + std::chrono::hours{24});
+  const auto issued = tokens.create_session(insert_user(connection),
+                                            domain::SystemClock{}.now() + std::chrono::hours{24});
   tokens.logout(issued.session_id);
   EXPECT_EQ(tokens.rotate(issued.token).status,
             infrastructure::RefreshRotationStatus::replay_detected);

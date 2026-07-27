@@ -40,6 +40,10 @@ namespace {
     status = 409;
     code = "project_archived";
     break;
+  case application::ProjectErrorCode::conflict:
+    status = 409;
+    code = "project_conflict";
+    break;
   }
   return {status, nlohmann::json{{"error",
                                   {{"code", std::move(code)},

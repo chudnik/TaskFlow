@@ -8,6 +8,7 @@
 #include <drogon/HttpAppFramework.h>
 #endif
 
+#include <csignal>
 #include <iostream>
 #include <string_view>
 
@@ -35,18 +36,22 @@ int main(int argc, char *argv[]) {
                {{"configuration", config.redacted_diagnostics(),
                  taskflow::platform::FieldSensitivity::public_value}});
 #if TASKFLOW_HAS_DROGON
+    std::signal(SIGTERM, [](int) { drogon::app().quit(); });
+    std::signal(SIGINT, [](int) { drogon::app().quit(); });
     auto &application = drogon::app();
     taskflow::transport::http::configure_api_router(application, [dsn = config.postgres_dsn]() {
       try {
         const auto schema = taskflow::infrastructure::check_postgres_schema(dsn);
-        return taskflow::transport::http::ReadinessReport{
-            schema.is_compatible(), "available",
-            schema.is_compatible() ? "compatible" : "incompatible"};
+        return taskflow::transport::http::ReadinessReport{schema.is_compatible(), "available",
+                                                          schema.is_compatible() ? "compatible"
+                                                                                 : "incompatible"};
       } catch (const std::exception &) {
         return taskflow::transport::http::ReadinessReport{false, "unavailable", "unknown"};
       }
     });
-    application.addListener(config.http_address, config.http_port).run();
+    application.setIdleConnectionTimeout(config.http_idle_timeout_seconds)
+        .addListener(config.http_address, config.http_port)
+        .run();
 #endif
     return 0;
   } catch (const taskflow::platform::ConfigError &error) {

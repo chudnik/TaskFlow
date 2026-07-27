@@ -22,7 +22,8 @@ RedisRateLimitBackend::RedisRateLimitBackend(std::string redis_uri)
     : impl_{std::make_unique<Impl>(redis_uri)} {}
 RedisRateLimitBackend::~RedisRateLimitBackend() = default;
 RedisRateLimitBackend::RedisRateLimitBackend(RedisRateLimitBackend &&) noexcept = default;
-RedisRateLimitBackend &RedisRateLimitBackend::operator=(RedisRateLimitBackend &&) noexcept = default;
+RedisRateLimitBackend &
+RedisRateLimitBackend::operator=(RedisRateLimitBackend &&) noexcept = default;
 
 std::optional<std::uint64_t>
 RedisRateLimitBackend::increment(const std::string_view key,

@@ -61,8 +61,7 @@ namespace {
     const bool overlong = (width == 2 && code_point < 0x80U) ||
                           (width == 3 && code_point < 0x800U) ||
                           (width == 4 && code_point < 0x10000U);
-    if (overlong || code_point > 0x10FFFFU ||
-        (code_point >= 0xD800U && code_point <= 0xDFFFU)) {
+    if (overlong || code_point > 0x10FFFFU || (code_point >= 0xD800U && code_point <= 0xDFFFU)) {
       return std::nullopt;
     }
     index += width;
@@ -198,8 +197,8 @@ std::optional<UtcInstant> parse_utc(const std::string_view value) noexcept {
     }
     fractional = nanoseconds{fraction_value};
   }
-  return UtcInstant{sys_days{date}.time_since_epoch() + hours{hour_value} +
-                    minutes{minute_value} + seconds{second_value} + fractional};
+  return UtcInstant{sys_days{date}.time_since_epoch() + hours{hour_value} + minutes{minute_value} +
+                    seconds{second_value} + fractional};
 }
 
 UtcInstant SystemClock::now() const {
@@ -224,8 +223,7 @@ std::optional<PageRequest> PageRequest::create(const std::optional<std::size_t> 
 }
 
 void ValidationErrors::add(std::string field, std::string code, std::string message) {
-  errors_.push_back(
-      ValidationError{std::move(field), std::move(code), std::move(message)});
+  errors_.push_back(ValidationError{std::move(field), std::move(code), std::move(message)});
 }
 
 void ValidationErrors::require_text(const std::string_view field, const std::string_view value,

@@ -28,14 +28,14 @@ std::string PasswordHasher::hash(const std::string_view password) const {
   for (auto &byte : salt) {
     byte = static_cast<std::uint8_t>(random());
   }
-  const auto encoded_length = argon2_encodedlen(
-      parameters_.time_cost, parameters_.memory_cost_kib, parameters_.parallelism,
-      parameters_.salt_bytes, parameters_.hash_bytes, Argon2_id);
+  const auto encoded_length =
+      argon2_encodedlen(parameters_.time_cost, parameters_.memory_cost_kib, parameters_.parallelism,
+                        parameters_.salt_bytes, parameters_.hash_bytes, Argon2_id);
   std::string encoded(encoded_length, '\0');
-  const auto result = argon2id_hash_encoded(
-      parameters_.time_cost, parameters_.memory_cost_kib, parameters_.parallelism,
-      password.data(), password.size(), salt.data(), salt.size(), parameters_.hash_bytes,
-      encoded.data(), encoded.size());
+  const auto result =
+      argon2id_hash_encoded(parameters_.time_cost, parameters_.memory_cost_kib,
+                            parameters_.parallelism, password.data(), password.size(), salt.data(),
+                            salt.size(), parameters_.hash_bytes, encoded.data(), encoded.size());
   if (result != ARGON2_OK) {
     throw std::runtime_error{"Argon2id password hashing failed"};
   }

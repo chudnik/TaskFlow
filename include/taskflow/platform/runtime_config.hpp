@@ -30,6 +30,9 @@ struct RuntimeConfig {
   std::uint32_t login_rate_limit;
   std::uint32_t refresh_rate_limit;
   std::uint32_t rate_limit_window_seconds;
+  std::uint32_t database_timeout_ms;
+  std::uint32_t http_idle_timeout_seconds;
+  std::uint32_t maximum_connections;
 
   [[nodiscard]] static RuntimeConfig from_environment();
   [[nodiscard]] static RuntimeConfig load(const EnvironmentLookup &environment,

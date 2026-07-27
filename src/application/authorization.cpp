@@ -32,4 +32,27 @@ bool PolicyService::permits(const AuthorizationContext &context,
   return false;
 }
 
+bool PolicyService::permits(const TaskAuthorizationContext &context,
+                            const TaskAction action) const noexcept {
+  if (context.global_role == domain::GlobalRole::admin) {
+    return action == TaskAction::read;
+  }
+  if (!context.project_role) {
+    return false;
+  }
+  const bool manages =
+      *context.project_role == ProjectRole::owner || *context.project_role == ProjectRole::manager;
+  switch (action) {
+  case TaskAction::read:
+    return true;
+  case TaskAction::update:
+  case TaskAction::change_status:
+  case TaskAction::assign:
+    return manages || context.is_creator || context.is_assignee;
+  case TaskAction::remove:
+    return manages;
+  }
+  return false;
+}
+
 } // namespace taskflow::application

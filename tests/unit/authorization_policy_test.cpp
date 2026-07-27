@@ -35,8 +35,9 @@ TEST(AuthorizationPolicy, EnforcesDenyByDefaultRoleMatrix) {
               row.admin);
     EXPECT_EQ(policy.permits({taskflow::domain::GlobalRole::user, ProjectRole::owner}, row.action),
               row.owner);
-    EXPECT_EQ(policy.permits({taskflow::domain::GlobalRole::user, ProjectRole::manager}, row.action),
-              row.manager);
+    EXPECT_EQ(
+        policy.permits({taskflow::domain::GlobalRole::user, ProjectRole::manager}, row.action),
+        row.manager);
     EXPECT_EQ(policy.permits({taskflow::domain::GlobalRole::user, ProjectRole::member}, row.action),
               row.member);
     EXPECT_EQ(policy.permits({taskflow::domain::GlobalRole::user, std::nullopt}, row.action),

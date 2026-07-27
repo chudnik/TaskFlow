@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -53,6 +54,9 @@ using ReadinessCheck = std::function<ReadinessReport()>;
                                                  std::string_view supplied_request_id);
 [[nodiscard]] std::string serialize_liveness();
 [[nodiscard]] std::string serialize_readiness(const ReadinessReport &report);
+[[nodiscard]] std::map<std::string, std::string> security_headers(bool external_tls);
+[[nodiscard]] bool cors_origin_allowed(std::string_view origin,
+                                       const std::vector<std::string> &allowed_origins) noexcept;
 
 #if TASKFLOW_HAS_DROGON
 void configure_api_router(drogon::HttpAppFramework &application, ReadinessCheck readiness_check);

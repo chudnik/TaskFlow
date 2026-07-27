@@ -22,15 +22,26 @@ enum class ProjectAction {
   admin_moderation,
 };
 
+enum class TaskAction { read, update, change_status, assign, remove };
+
 struct AuthorizationContext {
   domain::GlobalRole global_role;
   std::optional<ProjectRole> project_role;
+};
+
+struct TaskAuthorizationContext {
+  domain::GlobalRole global_role;
+  std::optional<ProjectRole> project_role;
+  bool is_creator;
+  bool is_assignee;
 };
 
 class PolicyService {
 public:
   [[nodiscard]] bool permits(const AuthorizationContext &context,
                              ProjectAction action) const noexcept;
+  [[nodiscard]] bool permits(const TaskAuthorizationContext &context,
+                             TaskAction action) const noexcept;
 };
 
 } // namespace taskflow::application

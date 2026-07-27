@@ -5,7 +5,7 @@
 
 namespace taskflow::infrastructure {
 
-inline constexpr std::int64_t expected_schema_version = 2;
+inline constexpr std::int64_t expected_schema_version = 3;
 
 enum class SchemaCompatibility {
   compatible,
@@ -23,9 +23,10 @@ struct SchemaCompatibilityResult {
   [[nodiscard]] std::string message() const;
 };
 
-[[nodiscard]] SchemaCompatibilityResult evaluate_schema_compatibility(
-    bool metadata_exists, bool migration_in_progress, std::int64_t current_version,
-    std::int64_t required_version = expected_schema_version);
+[[nodiscard]] SchemaCompatibilityResult
+evaluate_schema_compatibility(bool metadata_exists, bool migration_in_progress,
+                              std::int64_t current_version,
+                              std::int64_t required_version = expected_schema_version);
 
 [[nodiscard]] SchemaCompatibilityResult check_postgres_schema(const std::string &dsn);
 

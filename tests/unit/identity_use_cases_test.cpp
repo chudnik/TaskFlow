@@ -46,10 +46,10 @@ TEST(IdentityUseCases, ControllerMapsDuplicateEmailToConflict) {
   FakePasswords passwords;
   const application::IdentityUseCases use_cases{store, passwords};
   const transport::http::IdentityController controller{use_cases};
-  EXPECT_EQ(controller.register_user(
-                R"({"email":"user@example.com","password":"long password value"})")
-                .status,
-            409);
+  EXPECT_EQ(
+      controller.register_user(R"({"email":"user@example.com","password":"long password value"})")
+          .status,
+      409);
 }
 
 TEST(IdentityUseCases, LoginDoesNotDistinguishMissingUserAndWrongPassword) {
@@ -70,7 +70,7 @@ TEST(IdentityUseCases, LoginDoesNotDistinguishMissingUserAndWrongPassword) {
 TEST(IdentityUseCases, LoginRejectsInactiveAccount) {
   FakeStore store;
   store.credential = application::StoredCredential{test_user(domain::AccountStatus::inactive),
-                                                    "hash:actual password"};
+                                                   "hash:actual password"};
   FakePasswords passwords;
   const application::IdentityUseCases use_cases{store, passwords};
   EXPECT_EQ(transport::http::IdentityController{use_cases}

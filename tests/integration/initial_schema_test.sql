@@ -16,8 +16,8 @@ BEGIN
     RAISE EXCEPTION 'missing initial-schema tables: %', missing_tables;
   END IF;
 
-  IF (SELECT max(version) FROM taskflow_schema_migrations) <> 1 THEN
-    RAISE EXCEPTION 'expected schema version 2';
+  IF (SELECT max(version) FROM taskflow_schema_migrations) <> 3 THEN
+    RAISE EXCEPTION 'expected schema version 3';
   END IF;
 END;
 $$;

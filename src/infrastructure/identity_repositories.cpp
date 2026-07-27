@@ -33,18 +33,19 @@ namespace {
 }
 
 [[nodiscard]] domain::User user_from(const QueryResult &result, const std::size_t row = 0) {
-  return domain::User{
-      uuid(required(result, row, 0)), required(result, row, 1),
-      required(result, row, 2) == "admin" ? domain::GlobalRole::admin : domain::GlobalRole::user,
-      required(result, row, 3) == "active" ? domain::AccountStatus::active
-                                            : domain::AccountStatus::inactive,
-      instant(required(result, row, 4)), instant(required(result, row, 5))};
+  return domain::User{uuid(required(result, row, 0)),
+                      required(result, row, 1),
+                      required(result, row, 2) == "admin" ? domain::GlobalRole::admin
+                                                          : domain::GlobalRole::user,
+                      required(result, row, 3) == "active" ? domain::AccountStatus::active
+                                                           : domain::AccountStatus::inactive,
+                      instant(required(result, row, 4)),
+                      instant(required(result, row, 5))};
 }
 
-[[nodiscard]] domain::Session session_from(const QueryResult &result,
-                                            const std::size_t row = 0) {
-  return domain::Session{uuid(required(result, row, 0)), uuid(required(result, row, 1)),
-                         uuid(required(result, row, 2)), instant(required(result, row, 3)),
+[[nodiscard]] domain::Session session_from(const QueryResult &result, const std::size_t row = 0) {
+  return domain::Session{uuid(required(result, row, 0)),    uuid(required(result, row, 1)),
+                         uuid(required(result, row, 2)),    instant(required(result, row, 3)),
                          instant(required(result, row, 4)), instant(required(result, row, 5)),
                          result.value(row, 6).has_value()};
 }
@@ -86,11 +87,9 @@ domain::User UserRepository::create_user(std::string normalized_email, std::stri
 }
 
 std::optional<domain::User> UserRepository::find_by_id(const domain::Uuid &id) {
-  const auto result = connection_->execute("SELECT " + std::string{user_columns} +
-                                               " FROM users WHERE id = $1::uuid",
-                                           {id.to_string()});
-  return result.row_count() == 0 ? std::nullopt
-                                 : std::optional<domain::User>{user_from(result)};
+  const auto result = connection_->execute(
+      "SELECT " + std::string{user_columns} + " FROM users WHERE id = $1::uuid", {id.to_string()});
+  return result.row_count() == 0 ? std::nullopt : std::optional<domain::User>{user_from(result)};
 }
 
 std::optional<UserCredentialRecord>
@@ -98,10 +97,9 @@ UserRepository::find_credentials_by_email(const std::string_view normalized_emai
   const auto result = connection_->execute("SELECT " + std::string{user_columns} +
                                                ", password_hash FROM users WHERE email = $1",
                                            {std::string{normalized_email}});
-  return result.row_count() == 0
-             ? std::nullopt
-             : std::optional<UserCredentialRecord>{
-                   UserCredentialRecord{user_from(result), required(result, 0, 6)}};
+  return result.row_count() == 0 ? std::nullopt
+                                 : std::optional<UserCredentialRecord>{UserCredentialRecord{
+                                       user_from(result), required(result, 0, 6)}};
 }
 
 std::optional<application::StoredCredential>
@@ -143,10 +141,9 @@ SessionRepository::find_by_refresh_hash(const std::string_view refresh_token_has
                                                ", refresh_token_hash FROM sessions "
                                                "WHERE refresh_token_hash = $1",
                                            {std::string{refresh_token_hash}});
-  return result.row_count() == 0
-             ? std::nullopt
-             : std::optional<SessionCredentialRecord>{
-                   SessionCredentialRecord{session_from(result), required(result, 0, 7)}};
+  return result.row_count() == 0 ? std::nullopt
+                                 : std::optional<SessionCredentialRecord>{SessionCredentialRecord{
+                                       session_from(result), required(result, 0, 7)}};
 }
 
 } // namespace taskflow::infrastructure

@@ -1,5 +1,5 @@
 add_library(taskflow_domain STATIC domain/module.cpp domain/common.cpp domain/identity.cpp
-  domain/project.cpp)
+  domain/project.cpp domain/task.cpp domain/comment.cpp)
 add_library(TaskFlow::domain ALIAS taskflow_domain)
 target_include_directories(taskflow_domain PUBLIC "${PROJECT_SOURCE_DIR}/include")
 taskflow_set_project_warnings(taskflow_domain)
@@ -14,6 +14,16 @@ add_library(taskflow_application STATIC application/module.cpp application/ident
 target_sources(taskflow_application PRIVATE application/authorization.cpp)
 target_sources(taskflow_application PRIVATE application/rate_limiter.cpp)
 target_sources(taskflow_application PRIVATE application/projects.cpp)
+target_sources(taskflow_application PRIVATE application/tasks.cpp)
+target_sources(taskflow_application PRIVATE application/task_query.cpp)
+target_sources(taskflow_application PRIVATE application/task_cursor.cpp)
+target_sources(taskflow_application PRIVATE application/task_list.cpp)
+target_sources(taskflow_application PRIVATE application/comments.cpp)
+target_sources(taskflow_application PRIVATE application/audit.cpp)
+target_sources(taskflow_application PRIVATE application/notification_wakeup.cpp)
+target_sources(taskflow_application PRIVATE application/job_worker.cpp)
+target_sources(taskflow_application PRIVATE application/reminders.cpp)
+target_sources(taskflow_application PRIVATE application/reminder_handlers.cpp)
 add_library(TaskFlow::application ALIAS taskflow_application)
 target_include_directories(taskflow_application PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_application PUBLIC TaskFlow::domain)
@@ -23,6 +33,16 @@ add_library(taskflow_infrastructure STATIC
   infrastructure/module.cpp
   infrastructure/identity_repositories.cpp
   infrastructure/project_repositories.cpp
+  infrastructure/task_repositories.cpp
+  infrastructure/task_query_sql.cpp
+  infrastructure/task_cursor.cpp
+  infrastructure/comment_repositories.cpp
+  infrastructure/audit_repository.cpp
+  infrastructure/outbox_repository.cpp
+  infrastructure/notification_repository.cpp
+  infrastructure/notification_delivery.cpp
+  infrastructure/redis_notification_wakeup.cpp
+  infrastructure/job_repository.cpp
   infrastructure/jwt_access_token.cpp
   infrastructure/refresh_tokens.cpp
   infrastructure/redis_rate_limit.cpp
@@ -36,7 +56,10 @@ target_link_libraries(taskflow_infrastructure PUBLIC TaskFlow::application)
 taskflow_set_project_warnings(taskflow_infrastructure)
 
 add_library(taskflow_http_contract STATIC transport/http/api_contract.cpp
-  transport/http/identity_controller.cpp transport/http/project_controller.cpp)
+  transport/http/identity_controller.cpp transport/http/project_controller.cpp
+  transport/http/membership_controller.cpp transport/http/task_controller.cpp)
+target_sources(taskflow_http_contract PRIVATE transport/http/comment_controller.cpp)
+target_sources(taskflow_http_contract PRIVATE transport/http/audit_controller.cpp)
 add_library(TaskFlow::http_contract ALIAS taskflow_http_contract)
 target_include_directories(taskflow_http_contract PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(taskflow_http_contract PUBLIC TaskFlow::application)
@@ -48,10 +71,17 @@ target_include_directories(taskflow_http_transport PUBLIC "${PROJECT_SOURCE_DIR}
 target_link_libraries(taskflow_http_transport PUBLIC TaskFlow::application TaskFlow::http_contract)
 taskflow_set_project_warnings(taskflow_http_transport)
 
+add_library(taskflow_websocket_contract STATIC transport/websocket/protocol.cpp
+  transport/websocket/gateway.cpp)
+add_library(TaskFlow::websocket_contract ALIAS taskflow_websocket_contract)
+target_include_directories(taskflow_websocket_contract PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(taskflow_websocket_contract PUBLIC TaskFlow::application)
+taskflow_set_project_warnings(taskflow_websocket_contract)
+
 add_library(taskflow_websocket_transport STATIC transport/websocket/module.cpp)
 add_library(TaskFlow::websocket_transport ALIAS taskflow_websocket_transport)
 target_include_directories(taskflow_websocket_transport PUBLIC "${PROJECT_SOURCE_DIR}/include")
-target_link_libraries(taskflow_websocket_transport PUBLIC TaskFlow::application)
+target_link_libraries(taskflow_websocket_transport PUBLIC TaskFlow::websocket_contract)
 taskflow_set_project_warnings(taskflow_websocket_transport)
 
 if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
@@ -82,6 +112,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   target_link_libraries(taskflow_http_contract PUBLIC nlohmann_json::nlohmann_json)
   target_compile_definitions(taskflow_http_transport PUBLIC TASKFLOW_HAS_DROGON=1)
   target_link_libraries(taskflow_websocket_transport PUBLIC Drogon::Drogon nlohmann_json::nlohmann_json)
+  target_link_libraries(taskflow_websocket_contract PRIVATE nlohmann_json::nlohmann_json)
 endif()
 
 if(NOT TASKFLOW_ENABLE_EXTERNAL_DEPS)

@@ -46,13 +46,26 @@ TEST(ApiRouterTest, EnforcesJsonForMutationBodies) {
 
 TEST(ApiRouterTest, SerializesHealthContracts) {
   EXPECT_EQ(nlohmann::json::parse(serialize_liveness())["status"], "alive");
-  const auto ready = nlohmann::json::parse(
-      serialize_readiness(ReadinessReport{true, "available", "compatible"}));
+  const auto ready =
+      nlohmann::json::parse(serialize_readiness(ReadinessReport{true, "available", "compatible"}));
   EXPECT_EQ(ready["status"], "ready");
   EXPECT_EQ(ready["checks"]["schema"], "compatible");
-  const auto unavailable = nlohmann::json::parse(
-      serialize_readiness(ReadinessReport{false, "unavailable", "unknown"}));
+  const auto unavailable =
+      nlohmann::json::parse(serialize_readiness(ReadinessReport{false, "unavailable", "unknown"}));
   EXPECT_EQ(unavailable["status"], "unavailable");
+}
+
+TEST(ApiRouterTest, AppliesSecurityHeadersAndExactCorsPolicy) {
+  const auto headers = security_headers(true);
+  EXPECT_EQ(headers.at("X-Content-Type-Options"), "nosniff");
+  EXPECT_TRUE(headers.contains("Strict-Transport-Security"));
+  EXPECT_FALSE(security_headers(false).contains("Strict-Transport-Security"));
+  const std::vector<std::string> allowed{"https://app.example.com"};
+  EXPECT_TRUE(cors_origin_allowed("https://app.example.com", allowed));
+  EXPECT_FALSE(cors_origin_allowed("https://app.example.com.evil.test", allowed));
+  EXPECT_EQ(validate_request("POST", maximum_request_body_bytes + 1, "application/json", "hostile")
+                .error->code,
+            "request_too_large");
 }
 
 } // namespace

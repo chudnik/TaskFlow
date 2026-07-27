@@ -34,6 +34,12 @@ public:
                                     [&](const auto &value) { return value.id == project_id; });
     return found == projects.end() ? std::nullopt : std::optional{*found};
   }
+  std::optional<domain::Project> find_visible_project(const domain::Uuid &project_id,
+                                                      const domain::Uuid &user_id,
+                                                      const bool include_all) override {
+    const auto project = find_project(project_id);
+    return project && (include_all || find_role(project_id, user_id)) ? project : std::nullopt;
+  }
   std::optional<domain::ProjectRole> find_role(const domain::Uuid &project_id,
                                                const domain::Uuid &user_id) override {
     const auto found = std::find_if(memberships.begin(), memberships.end(), [&](const auto &value) {
@@ -97,8 +103,11 @@ TEST(ProjectUseCasesTest, EnforcesReadUpdateAndArchivePolicies) {
   store.memberships.push_back({project.id, member_id, domain::ProjectRole::member, now(), now()});
   const transport::http::ProjectController controller{use_cases};
 
-  EXPECT_EQ(controller.read(principal(domain::Uuid::generate()), project.id.to_string()).status,
-            404);
+  const auto hidden = controller.read(principal(domain::Uuid::generate()), project.id.to_string());
+  const auto missing =
+      controller.read(principal(domain::Uuid::generate()), domain::Uuid::generate().to_string());
+  EXPECT_EQ(hidden.status, 404);
+  EXPECT_EQ(hidden.body, missing.body);
   EXPECT_EQ(controller
                 .update(principal(member_id), project.id.to_string(),
                         R"({"name":"Changed","description":"No"})")

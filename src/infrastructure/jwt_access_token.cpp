@@ -21,10 +21,11 @@ struct VerificationClock {
 }
 } // namespace
 
-JwtAccessTokenService::JwtAccessTokenService(
-    std::string secret, std::string issuer, std::string audience,
-    const std::chrono::seconds lifetime, const domain::Clock &clock,
-    const application::AccountSessionValidator &validator)
+JwtAccessTokenService::JwtAccessTokenService(std::string secret, std::string issuer,
+                                             std::string audience,
+                                             const std::chrono::seconds lifetime,
+                                             const domain::Clock &clock,
+                                             const application::AccountSessionValidator &validator)
     : secret_{std::move(secret)}, issuer_{std::move(issuer)}, audience_{std::move(audience)},
       lifetime_{lifetime}, clock_{&clock}, validator_{&validator} {
   if (secret_.size() < 32 || issuer_.empty() || audience_.empty() || lifetime_.count() <= 0) {
@@ -43,10 +44,9 @@ std::string JwtAccessTokenService::create(const domain::User &user,
       .set_expires_at(issued_at + lifetime_)
       .set_id(domain::Uuid::generate().to_string())
       .set_payload_claim("session_id", jwt::claim(session_id.to_string()))
-      .set_payload_claim("global_role",
-                         jwt::claim(std::string{user.global_role == domain::GlobalRole::admin
-                                                    ? "admin"
-                                                    : "user"}))
+      .set_payload_claim(
+          "global_role",
+          jwt::claim(std::string{user.global_role == domain::GlobalRole::admin ? "admin" : "user"}))
       .sign(jwt::algorithm::hs256{secret_});
 }
 
@@ -54,9 +54,9 @@ std::optional<application::AuthenticatedPrincipal>
 JwtAccessTokenService::validate(const std::string_view token) const noexcept {
   try {
     const auto decoded = jwt::decode(std::string{token});
-    if (decoded.get_algorithm() != "HS256" || !decoded.has_subject() ||
-        !decoded.has_expires_at() || !decoded.has_issued_at() || !decoded.has_id() ||
-        !decoded.has_payload_claim("session_id") || !decoded.has_payload_claim("global_role")) {
+    if (decoded.get_algorithm() != "HS256" || !decoded.has_subject() || !decoded.has_expires_at() ||
+        !decoded.has_issued_at() || !decoded.has_id() || !decoded.has_payload_claim("session_id") ||
+        !decoded.has_payload_claim("global_role")) {
       return std::nullopt;
     }
     std::error_code error;

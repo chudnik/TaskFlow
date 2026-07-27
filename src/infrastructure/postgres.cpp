@@ -80,8 +80,11 @@ PostgresConnection::PostgresConnection(std::string dsn) : impl_{std::make_unique
       PQfinish(impl_->connection);
       impl_->connection = nullptr;
     }
-    throw RepositoryError{RepositoryErrorCode::unavailable,
-                          "unable to connect to PostgreSQL"};
+    throw RepositoryError{RepositoryErrorCode::unavailable, "unable to connect to PostgreSQL"};
+  }
+  PGresult *timeout_result = PQexec(impl_->connection, "SET statement_timeout = '5s'");
+  if (timeout_result != nullptr) {
+    PQclear(timeout_result);
   }
 #else
   (void)dsn;
@@ -105,8 +108,8 @@ QueryResult PostgresConnection::execute(const std::string_view sql,
                                         const QueryParameters &parameters) {
 #if TASKFLOW_HAS_POSTGRES
   if (!impl_ || impl_->connection == nullptr || PQstatus(impl_->connection) != CONNECTION_OK) {
-    throw RepositoryError{RepositoryErrorCode::unavailable,
-                          "PostgreSQL connection is unavailable", "08006"};
+    throw RepositoryError{RepositoryErrorCode::unavailable, "PostgreSQL connection is unavailable",
+                          "08006"};
   }
   if (parameters.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
     throw RepositoryError{RepositoryErrorCode::unexpected, "too many query parameters"};
@@ -119,12 +122,12 @@ QueryResult PostgresConnection::execute(const std::string_view sql,
   }
 
   const std::string statement{sql};
-  PGresult *raw_result = PQexecParams(impl_->connection, statement.c_str(),
-                                     static_cast<int>(values.size()), nullptr, values.data(),
-                                     nullptr, nullptr, 0);
+  PGresult *raw_result =
+      PQexecParams(impl_->connection, statement.c_str(), static_cast<int>(values.size()), nullptr,
+                   values.data(), nullptr, nullptr, 0);
   if (raw_result == nullptr) {
-    throw RepositoryError{RepositoryErrorCode::unavailable,
-                          "PostgreSQL query returned no result", "08006"};
+    throw RepositoryError{RepositoryErrorCode::unavailable, "PostgreSQL query returned no result",
+                          "08006"};
   }
   struct ResultGuard {
     PGresult *value;
@@ -179,8 +182,7 @@ bool PostgresConnection::is_healthy() noexcept {
 
 Transaction PostgresConnection::transaction() {
   if (transaction_active_) {
-    throw RepositoryError{RepositoryErrorCode::unexpected,
-                          "nested transactions are not supported"};
+    throw RepositoryError{RepositoryErrorCode::unexpected, "nested transactions are not supported"};
   }
   return Transaction{*this};
 }

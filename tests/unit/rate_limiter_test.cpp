@@ -8,8 +8,7 @@ using namespace taskflow::application;
 class Backend final : public RateLimitBackend {
 public:
   std::optional<std::uint64_t> next{1};
-  std::optional<std::uint64_t> increment(std::string_view,
-                                         std::chrono::seconds) noexcept override {
+  std::optional<std::uint64_t> increment(std::string_view, std::chrono::seconds) noexcept override {
     return next;
   }
 };

@@ -131,15 +131,24 @@ RuntimeConfig RuntimeConfig::load(const EnvironmentLookup &environment,
       .http_address = value_or("TASKFLOW_HTTP_ADDRESS", "0.0.0.0", environment, read_file),
       .http_port = parse_port(value_or("TASKFLOW_HTTP_PORT", "8080", environment, read_file)),
       .log_level = value_or("TASKFLOW_LOG_LEVEL", "info", environment, read_file),
-      .login_rate_limit = parse_positive(
-          "TASKFLOW_LOGIN_RATE_LIMIT",
-          value_or("TASKFLOW_LOGIN_RATE_LIMIT", "10", environment, read_file)),
-      .refresh_rate_limit = parse_positive(
-          "TASKFLOW_REFRESH_RATE_LIMIT",
-          value_or("TASKFLOW_REFRESH_RATE_LIMIT", "30", environment, read_file)),
+      .login_rate_limit =
+          parse_positive("TASKFLOW_LOGIN_RATE_LIMIT",
+                         value_or("TASKFLOW_LOGIN_RATE_LIMIT", "10", environment, read_file)),
+      .refresh_rate_limit =
+          parse_positive("TASKFLOW_REFRESH_RATE_LIMIT",
+                         value_or("TASKFLOW_REFRESH_RATE_LIMIT", "30", environment, read_file)),
       .rate_limit_window_seconds = parse_positive(
           "TASKFLOW_RATE_LIMIT_WINDOW_SECONDS",
           value_or("TASKFLOW_RATE_LIMIT_WINDOW_SECONDS", "60", environment, read_file)),
+      .database_timeout_ms =
+          parse_positive("TASKFLOW_DATABASE_TIMEOUT_MS",
+                         value_or("TASKFLOW_DATABASE_TIMEOUT_MS", "5000", environment, read_file)),
+      .http_idle_timeout_seconds = parse_positive(
+          "TASKFLOW_HTTP_IDLE_TIMEOUT_SECONDS",
+          value_or("TASKFLOW_HTTP_IDLE_TIMEOUT_SECONDS", "30", environment, read_file)),
+      .maximum_connections =
+          parse_positive("TASKFLOW_MAXIMUM_CONNECTIONS",
+                         value_or("TASKFLOW_MAXIMUM_CONNECTIONS", "1000", environment, read_file)),
   };
 
   if (config.jwt_signing_secret.size() < 32) {
@@ -157,7 +166,10 @@ std::string RuntimeConfig::redacted_diagnostics() const {
          << ", log_level=" << log_level;
   output << ", login_rate_limit=" << login_rate_limit
          << ", refresh_rate_limit=" << refresh_rate_limit
-         << ", rate_limit_window_seconds=" << rate_limit_window_seconds;
+         << ", rate_limit_window_seconds=" << rate_limit_window_seconds
+         << ", database_timeout_ms=" << database_timeout_ms
+         << ", http_idle_timeout_seconds=" << http_idle_timeout_seconds
+         << ", maximum_connections=" << maximum_connections;
   return output.str();
 }
 

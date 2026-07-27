@@ -38,9 +38,9 @@ std::string SchemaCompatibilityResult::message() const {
 }
 
 SchemaCompatibilityResult evaluate_schema_compatibility(const bool metadata_exists,
-                                                         const bool migration_in_progress,
-                                                         const std::int64_t current_version,
-                                                         const std::int64_t required_version) {
+                                                        const bool migration_in_progress,
+                                                        const std::int64_t current_version,
+                                                        const std::int64_t required_version) {
   if (!metadata_exists) {
     return {SchemaCompatibility::metadata_missing, current_version};
   }
@@ -71,9 +71,9 @@ SchemaCompatibilityResult check_postgres_schema(const std::string &dsn) {
     throw std::runtime_error{"unable to connect to PostgreSQL for schema compatibility check"};
   }
 
-  PGresult *query = PQexec(connection,
-                           "SELECT to_regclass('public.taskflow_schema_migrations') IS NOT NULL, "
-                           "pg_try_advisory_lock(1413563980)");
+  PGresult *query =
+      PQexec(connection, "SELECT to_regclass('public.taskflow_schema_migrations') IS NOT NULL, "
+                         "pg_try_advisory_lock(1413563980)");
   if (query == nullptr) {
     throw std::runtime_error{"schema compatibility query failed"};
   }

@@ -112,4 +112,14 @@ TEST(RuntimeConfigTest, RedactsCredentialsInDiagnostics) {
   EXPECT_NE(diagnostics.find("<redacted>"), std::string::npos);
 }
 
+TEST(RuntimeConfigTest, RejectsZeroOperationalLimit) {
+  EXPECT_THROW(static_cast<void>(RuntimeConfig::load(
+                   environment({{"TASKFLOW_POSTGRES_DSN", "postgresql://db/taskflow"},
+                                {"TASKFLOW_REDIS_URI", "redis://redis:6379"},
+                                {"TASKFLOW_JWT_SIGNING_SECRET", "0123456789abcdef0123456789abcdef"},
+                                {"TASKFLOW_MAXIMUM_CONNECTIONS", "0"}}),
+                   no_files)),
+               ConfigError);
+}
+
 } // namespace

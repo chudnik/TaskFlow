@@ -22,12 +22,29 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/rate_limiter_test.cpp
     unit/project_model_test.cpp
     unit/project_use_cases_test.cpp
+    unit/membership_use_cases_test.cpp
+    unit/task_model_test.cpp
+    unit/task_use_cases_test.cpp
+    unit/task_query_test.cpp
+    unit/task_cursor_test.cpp
+    unit/audit_test.cpp
+    unit/websocket_gateway_test.cpp
+    unit/notification_wakeup_test.cpp
+    unit/websocket_protocol_test.cpp
+    unit/job_worker_test.cpp
+    unit/reminder_scheduler_test.cpp
+    unit/reminder_handler_test.cpp
+    unit/openapi_contract_test.cpp
+  )
+  target_compile_definitions(taskflow-unit-tests PRIVATE
+    TASKFLOW_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
     TaskFlow::domain
     TaskFlow::platform
     TaskFlow::infrastructure
     TaskFlow::http_contract
+    TaskFlow::websocket_contract
     GTest::gtest_main
     nlohmann_json::nlohmann_json
   )
@@ -40,6 +57,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     integration/postgres_foundation_test.cpp
     integration/refresh_token_rotation_test.cpp
     integration/project_repositories_test.cpp
+    integration/docker_compose_e2e_test.cpp
   )
   target_link_libraries(taskflow-postgres-integration-tests PRIVATE
     TaskFlow::infrastructure

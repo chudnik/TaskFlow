@@ -39,7 +39,7 @@
     {
       "name": "asan",
       "displayName": "AddressSanitizer",
-      "inherits": "developer",
+      "inherits": "conan-debug",
       "cacheVariables": {
         "TASKFLOW_ENABLE_ASAN": true
       }
@@ -47,7 +47,7 @@
     {
       "name": "ubsan",
       "displayName": "UndefinedBehaviorSanitizer",
-      "inherits": "developer",
+      "inherits": "conan-debug",
       "cacheVariables": {
         "TASKFLOW_ENABLE_UBSAN": true
       }

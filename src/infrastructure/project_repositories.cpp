@@ -130,6 +130,23 @@ std::optional<domain::Project> ProjectRepository::find_project(const domain::Uui
   return find_by_id(project_id);
 }
 
+std::optional<domain::Project>
+ProjectRepository::find_visible_project(const domain::Uuid &project_id, const domain::Uuid &user_id,
+                                        const bool include_all) {
+  const auto result =
+      include_all
+          ? connection_->execute("SELECT " + std::string{project_columns} +
+                                     " FROM projects WHERE id = $1::uuid",
+                                 {project_id.to_string()})
+          : connection_->execute("SELECT " + std::string{project_columns} +
+                                     " FROM projects p WHERE p.id = $1::uuid AND EXISTS "
+                                     "(SELECT 1 FROM project_members pm WHERE pm.project_id = p.id "
+                                     "AND pm.user_id = $2::uuid)",
+                                 {project_id.to_string(), user_id.to_string()});
+  return result.row_count() == 0 ? std::nullopt
+                                 : std::optional<domain::Project>{project_from(result)};
+}
+
 std::optional<domain::ProjectRole> ProjectRepository::find_role(const domain::Uuid &project_id,
                                                                 const domain::Uuid &user_id) {
   const auto result = connection_->execute(
@@ -201,6 +218,11 @@ domain::ProjectMembership ProjectMembershipRepository::add(const domain::Uuid &p
   return membership_from(result);
 }
 
+domain::ProjectMembership ProjectMembershipRepository::add_membership(
+    const domain::Uuid &project_id, const domain::Uuid &user_id, const domain::ProjectRole role) {
+  return add(project_id, user_id, role);
+}
+
 std::optional<domain::ProjectMembership>
 ProjectMembershipRepository::find(const domain::Uuid &project_id, const domain::Uuid &user_id) {
   const auto result = connection_->execute(
@@ -210,6 +232,12 @@ ProjectMembershipRepository::find(const domain::Uuid &project_id, const domain::
   return result.row_count() == 0
              ? std::nullopt
              : std::optional<domain::ProjectMembership>{membership_from(result)};
+}
+
+std::optional<domain::ProjectMembership>
+ProjectMembershipRepository::find_membership(const domain::Uuid &project_id,
+                                             const domain::Uuid &user_id) {
+  return find(project_id, user_id);
 }
 
 std::vector<domain::ProjectMembership>
@@ -224,6 +252,11 @@ ProjectMembershipRepository::list(const domain::Uuid &project_id) {
     memberships.push_back(membership_from(result, row));
   }
   return memberships;
+}
+
+std::vector<domain::ProjectMembership>
+ProjectMembershipRepository::list_memberships(const domain::Uuid &project_id) {
+  return list(project_id);
 }
 
 domain::ProjectMembership ProjectMembershipRepository::change_role(const domain::Uuid &project_id,
@@ -246,11 +279,21 @@ domain::ProjectMembership ProjectMembershipRepository::change_role(const domain:
   return membership_from(result);
 }
 
+domain::ProjectMembership ProjectMembershipRepository::change_membership_role(
+    const domain::Uuid &project_id, const domain::Uuid &user_id, const domain::ProjectRole role) {
+  return change_role(project_id, user_id, role);
+}
+
 void ProjectMembershipRepository::remove(const domain::Uuid &project_id,
                                          const domain::Uuid &user_id) {
   auto transaction = connection_->transaction();
   lock_project(transaction, project_id);
   protect_final_owner(transaction, project_id, user_id);
+  static_cast<void>(transaction.execute(
+      "UPDATE tasks SET assignee_id = NULL, version = version + 1, "
+      "updated_at = clock_timestamp() "
+      "WHERE project_id = $1::uuid AND assignee_id = $2::uuid AND deleted_at IS NULL",
+      {project_id.to_string(), user_id.to_string()}));
   const auto result = transaction.execute(
       "DELETE FROM project_members WHERE project_id = $1::uuid AND user_id = $2::uuid",
       {project_id.to_string(), user_id.to_string()});
@@ -258,6 +301,11 @@ void ProjectMembershipRepository::remove(const domain::Uuid &project_id,
     throw RepositoryError{RepositoryErrorCode::not_found, "project membership not found"};
   }
   transaction.commit();
+}
+
+void ProjectMembershipRepository::remove_membership(const domain::Uuid &project_id,
+                                                    const domain::Uuid &user_id) {
+  remove(project_id, user_id);
 }
 
 } // namespace taskflow::infrastructure

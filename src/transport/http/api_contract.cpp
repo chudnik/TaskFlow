@@ -97,14 +97,16 @@ RequestValidation validate_request(const std::string_view method, const std::siz
                                    const std::string_view supplied_request_id) {
   RequestValidation validation{normalized_request_id(supplied_request_id), std::nullopt};
   if (body_size > maximum_request_body_bytes) {
-    validation.error = ApiError{413, "request_too_large", "request body exceeds the limit", {},
-                                validation.request_id};
+    validation.error = ApiError{
+        413, "request_too_large", "request body exceeds the limit", {}, validation.request_id};
     return validation;
   }
   const bool method_expects_json = method == "POST" || method == "PUT" || method == "PATCH";
   if (method_expects_json && body_size != 0 && !is_json_content_type(content_type)) {
-    validation.error = ApiError{415, "unsupported_media_type",
-                                "Content-Type must be application/json", {},
+    validation.error = ApiError{415,
+                                "unsupported_media_type",
+                                "Content-Type must be application/json",
+                                {},
                                 validation.request_id};
   }
   return validation;
@@ -115,9 +117,27 @@ std::string serialize_liveness() { return "{\"status\":\"alive\"}"; }
 std::string serialize_readiness(const ReadinessReport &report) {
   std::ostringstream output;
   output << "{\"status\":\"" << (report.ready ? "ready" : "unavailable")
-         << "\",\"checks\":{\"postgres\":\"" << escape_json(report.postgres)
-         << "\",\"schema\":\"" << escape_json(report.schema) << "\"}}";
+         << "\",\"checks\":{\"postgres\":\"" << escape_json(report.postgres) << "\",\"schema\":\""
+         << escape_json(report.schema) << "\"}}";
   return output.str();
+}
+
+std::map<std::string, std::string> security_headers(const bool external_tls) {
+  std::map<std::string, std::string> headers{
+      {"Cache-Control", "no-store"},
+      {"Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"},
+      {"Referrer-Policy", "no-referrer"},
+      {"X-Content-Type-Options", "nosniff"},
+      {"X-Frame-Options", "DENY"}};
+  if (external_tls)
+    headers.emplace("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  return headers;
+}
+
+bool cors_origin_allowed(const std::string_view origin,
+                         const std::vector<std::string> &allowed_origins) noexcept {
+  return std::any_of(allowed_origins.begin(), allowed_origins.end(),
+                     [&](const auto &allowed) { return origin == allowed; });
 }
 
 } // namespace taskflow::transport::http

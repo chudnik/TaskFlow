@@ -62,8 +62,7 @@ public:
   PostgresConnection(PostgresConnection &&) noexcept;
   PostgresConnection &operator=(PostgresConnection &&) noexcept;
 
-  [[nodiscard]] QueryResult execute(std::string_view sql,
-                                    const QueryParameters &parameters = {});
+  [[nodiscard]] QueryResult execute(std::string_view sql, const QueryParameters &parameters = {});
   [[nodiscard]] bool is_healthy() noexcept;
   [[nodiscard]] Transaction transaction();
 
@@ -83,8 +82,7 @@ public:
   Transaction(Transaction &&other) noexcept;
   Transaction &operator=(Transaction &&) = delete;
 
-  [[nodiscard]] QueryResult execute(std::string_view sql,
-                                    const QueryParameters &parameters = {});
+  [[nodiscard]] QueryResult execute(std::string_view sql, const QueryParameters &parameters = {});
   void commit();
   void rollback();
 

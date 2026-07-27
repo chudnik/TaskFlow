@@ -8,22 +8,22 @@ namespace taskflow::transport::http {
 namespace {
 
 [[nodiscard]] std::string public_user_json(const domain::User &user) {
-  return nlohmann::json{{"id", user.id.to_string()},
-                        {"email", user.email},
-                        {"global_role", user.global_role == domain::GlobalRole::admin ? "admin"
-                                                                                     : "user"},
-                        {"status", user.status == domain::AccountStatus::active ? "active"
-                                                                                : "inactive"},
-                        {"created_at", domain::format_utc(user.created_at)},
-                        {"updated_at", domain::format_utc(user.updated_at)}}
+  return nlohmann::json{
+      {"id", user.id.to_string()},
+      {"email", user.email},
+      {"global_role", user.global_role == domain::GlobalRole::admin ? "admin" : "user"},
+      {"status", user.status == domain::AccountStatus::active ? "active" : "inactive"},
+      {"created_at", domain::format_utc(user.created_at)},
+      {"updated_at", domain::format_utc(user.updated_at)}}
       .dump();
 }
 
 [[nodiscard]] ControllerResponse error_response(const int status, std::string code,
                                                 std::string message) {
-  return {status, nlohmann::json{{"error", {{"code", std::move(code)},
-                                            {"message", std::move(message)},
-                                            {"details", nlohmann::json::array()}}}}
+  return {status, nlohmann::json{{"error",
+                                  {{"code", std::move(code)},
+                                   {"message", std::move(message)},
+                                   {"details", nlohmann::json::array()}}}}
                       .dump()};
 }
 
@@ -48,11 +48,10 @@ ControllerResponse IdentityController::invoke(const std::string_view json_body,
         !body.contains("password") || !body["password"].is_string()) {
       return error_response(400, "invalid_request", "email and password are required");
     }
-    const auto user = registration
-                          ? use_cases_->register_user(body["email"].get<std::string>(),
-                                                     body["password"].get<std::string>())
-                          : use_cases_->login(body["email"].get<std::string>(),
-                                              body["password"].get<std::string>());
+    const auto user = registration ? use_cases_->register_user(body["email"].get<std::string>(),
+                                                               body["password"].get<std::string>())
+                                   : use_cases_->login(body["email"].get<std::string>(),
+                                                       body["password"].get<std::string>());
     return {registration ? 201 : 200, public_user_json(user)};
   } catch (const nlohmann::json::exception &) {
     return error_response(400, "invalid_json", "request body must be valid JSON");

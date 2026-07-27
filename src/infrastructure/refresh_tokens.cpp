@@ -39,7 +39,8 @@ namespace {
 }
 } // namespace
 
-RefreshTokenService::RefreshTokenService(PostgresConnection &connection) : connection_{&connection} {}
+RefreshTokenService::RefreshTokenService(PostgresConnection &connection)
+    : connection_{&connection} {}
 
 std::string RefreshTokenService::generate_token() {
   std::random_device random;

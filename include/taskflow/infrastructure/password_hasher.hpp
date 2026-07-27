@@ -21,7 +21,8 @@ public:
   explicit PasswordHasher(Argon2idParameters parameters = {});
 
   [[nodiscard]] std::string hash(std::string_view password) const;
-  [[nodiscard]] bool verify(std::string_view password, std::string_view encoded_hash) const noexcept;
+  [[nodiscard]] bool verify(std::string_view password,
+                            std::string_view encoded_hash) const noexcept;
   [[nodiscard]] std::string hash_password(std::string_view password) const override;
   [[nodiscard]] bool verify_password(std::string_view password,
                                      std::string_view encoded_hash) const noexcept override;

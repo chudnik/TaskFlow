@@ -60,8 +60,8 @@ struct PageRequest {
   std::size_t size;
   std::optional<std::string> cursor;
 
-  [[nodiscard]] static std::optional<PageRequest>
-  create(std::optional<std::size_t> requested_size, std::optional<std::string> cursor = {});
+  [[nodiscard]] static std::optional<PageRequest> create(std::optional<std::size_t> requested_size,
+                                                         std::optional<std::string> cursor = {});
 };
 
 struct ValidationError {
