@@ -2,6 +2,8 @@
 
 C++20 modular-monolith backend scaffold for a multi-user task management service.
 
+Документация на русском: [docs/ru/README.md](docs/ru/README.md).
+
 ## Bootstrap build
 
 The bootstrap preset verifies the target graph without downloading third-party packages:

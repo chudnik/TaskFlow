@@ -37,6 +37,9 @@ COPY --chown=taskflow:taskflow include ./include
 COPY --chown=taskflow:taskflow src ./src
 COPY --chown=taskflow:taskflow tests ./tests
 COPY --chown=taskflow:taskflow openapi ./openapi
+COPY --chown=taskflow:taskflow docs ./docs
+COPY --chown=taskflow:taskflow scripts ./scripts
+COPY --chown=taskflow:taskflow README.md ./
 RUN --mount=type=cache,target=/home/taskflow/.conan2,uid=10001,gid=10001 \
     cmake --preset ci-release \
     && cmake --build --preset ci-release

@@ -1,6 +1,21 @@
 add_test(NAME taskflow-api-version COMMAND taskflow-api --version)
 add_test(NAME taskflow-worker-version COMMAND taskflow-worker --version)
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(
+  NAME documentation.russian
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/scripts/check_russian_docs.py
+    --root ${PROJECT_SOURCE_DIR}
+)
+add_test(
+  NAME documentation.russian-checker-tests
+  COMMAND ${Python3_EXECUTABLE} -m unittest
+    tests/documentation/test_check_russian_docs.py
+)
+set_tests_properties(documentation.russian-checker-tests PROPERTIES
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+)
+
 if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   find_package(GTest CONFIG REQUIRED)
   find_package(nlohmann_json CONFIG REQUIRED)
