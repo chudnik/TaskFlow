@@ -107,9 +107,19 @@ PostgresConnection &PostgresConnection::operator=(PostgresConnection &&) noexcep
 QueryResult PostgresConnection::execute(const std::string_view sql,
                                         const QueryParameters &parameters) {
 #if TASKFLOW_HAS_POSTGRES
-  if (!impl_ || impl_->connection == nullptr || PQstatus(impl_->connection) != CONNECTION_OK) {
+  if (!impl_ || impl_->connection == nullptr) {
     throw RepositoryError{RepositoryErrorCode::unavailable, "PostgreSQL connection is unavailable",
                           "08006"};
+  }
+  if (PQstatus(impl_->connection) != CONNECTION_OK) {
+    PQreset(impl_->connection);
+    if (PQstatus(impl_->connection) != CONNECTION_OK) {
+      throw RepositoryError{RepositoryErrorCode::unavailable,
+                            "PostgreSQL connection is unavailable", "08006"};
+    }
+    if (auto *timeout_result = PQexec(impl_->connection, "SET statement_timeout = '5s'");
+        timeout_result != nullptr)
+      PQclear(timeout_result);
   }
   if (parameters.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
     throw RepositoryError{RepositoryErrorCode::unexpected, "too many query parameters"};

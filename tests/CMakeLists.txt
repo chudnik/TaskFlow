@@ -23,6 +23,8 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
   add_executable(taskflow-unit-tests
     unit/scaffold_test.cpp
     unit/runtime_config_test.cpp
+    unit/runtime_lifecycle_test.cpp
+    unit/runtime_owner_test.cpp
     unit/structured_logger_test.cpp
     unit/schema_compatibility_test.cpp
     unit/common_primitives_test.cpp
@@ -33,6 +35,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     unit/jwt_access_token_test.cpp
     unit/refresh_tokens_test.cpp
     unit/authentication_middleware_test.cpp
+    unit/authentication_sessions_test.cpp
     unit/authorization_policy_test.cpp
     unit/rate_limiter_test.cpp
     unit/project_model_test.cpp
@@ -55,6 +58,7 @@ if(TASKFLOW_ENABLE_EXTERNAL_DEPS)
     TASKFLOW_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
   )
   target_link_libraries(taskflow-unit-tests PRIVATE
+    TaskFlow::runtime
     TaskFlow::domain
     TaskFlow::platform
     TaskFlow::infrastructure

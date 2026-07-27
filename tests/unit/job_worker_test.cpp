@@ -38,4 +38,25 @@ TEST(JobWorkerTest, DispatchesRetriesLogsAndStopsGracefully) {
   EXPECT_EQ(worker.run_once(), 0U);
 }
 
+TEST(JobWorkerTest, RunsContinuouslyWithIdleWaitAndBoundedDependencyBackoff) {
+  Jobs jobs;
+  application::JobWorker worker{jobs, "worker-loop"};
+  std::vector<std::chrono::milliseconds> waits;
+  std::vector<std::string> outcomes;
+  worker.run_continuously(
+      8, std::chrono::milliseconds{25}, std::chrono::milliseconds{10},
+      std::chrono::milliseconds{40},
+      [&](const auto duration) {
+        waits.push_back(duration);
+        return waits.size() == 3;
+      },
+      [&](const std::string_view outcome, const std::string_view) {
+        outcomes.emplace_back(outcome);
+      });
+  ASSERT_EQ(waits.size(), 3U);
+  EXPECT_EQ(waits[0], std::chrono::milliseconds{25});
+  EXPECT_EQ(outcomes.back(), "stopped");
+  EXPECT_TRUE(worker.stopping());
+}
+
 } // namespace

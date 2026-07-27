@@ -10,6 +10,10 @@ namespace taskflow::transport::http {
 AuditController::AuditController(const application::AuditUseCases &use_cases)
     : use_cases_{&use_cases} {}
 
+AuditController::AuditController(const application::AuditUseCases &use_cases,
+                                 application::TaskStore &tasks)
+    : use_cases_{&use_cases}, tasks_{&tasks} {}
+
 ControllerResponse AuditController::history(const application::AuthenticatedPrincipal &actor,
                                             const std::string_view project_id,
                                             const std::optional<std::string_view> task_id,
@@ -55,6 +59,30 @@ ControllerResponse AuditController::history(const application::AuthenticatedPrin
                                   {"message", error.what()},
                                   {"details", nlohmann::json::array()}}}}
                      .dump()};
+  }
+}
+
+ControllerResponse AuditController::task_history(const application::AuthenticatedPrincipal &actor,
+                                                 const std::string_view task_id,
+                                                 const domain::PageRequest page) const {
+  const auto id = domain::Uuid::parse(task_id);
+  if (!id)
+    return {400,
+            R"({"error":{"code":"invalid_id","message":"task ID must be UUID","details":[]}})"};
+  if (tasks_ == nullptr)
+    return {
+        500,
+        R"({"error":{"code":"internal_error","message":"task history is unavailable","details":[]}})"};
+  try {
+    const auto task = tasks_->find_active_task(*id);
+    if (!task)
+      return {404,
+              R"({"error":{"code":"history_not_found","message":"task not found","details":[]}})"};
+    return history(actor, task->project_id.to_string(), task_id, page);
+  } catch (const std::exception &) {
+    return {
+        503,
+        R"({"error":{"code":"dependency_unavailable","message":"history is temporarily unavailable","details":[]}})"};
   }
 }
 

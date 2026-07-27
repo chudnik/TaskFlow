@@ -33,6 +33,12 @@ struct RuntimeConfig {
   std::uint32_t database_timeout_ms;
   std::uint32_t http_idle_timeout_seconds;
   std::uint32_t maximum_connections;
+  std::uint32_t worker_poll_interval_ms;
+  std::uint32_t worker_batch_size;
+  std::uint32_t worker_lease_seconds;
+  std::uint32_t worker_retry_initial_ms;
+  std::uint32_t worker_retry_max_ms;
+  std::uint32_t shutdown_timeout_seconds;
 
   [[nodiscard]] static RuntimeConfig from_environment();
   [[nodiscard]] static RuntimeConfig load(const EnvironmentLookup &environment,

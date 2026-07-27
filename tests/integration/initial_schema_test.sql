@@ -8,7 +8,7 @@ BEGIN
     INTO missing_tables
   FROM unnest(ARRAY[
     'users', 'sessions', 'projects', 'project_members', 'tasks', 'comments',
-    'audit_events', 'outbox_events', 'notification_events', 'jobs'
+    'audit_events', 'outbox_events', 'notification_events', 'jobs', 'reminder_effects'
   ]) AS expected(name)
   WHERE to_regclass('public.' || expected.name) IS NULL;
 
@@ -16,8 +16,8 @@ BEGIN
     RAISE EXCEPTION 'missing initial-schema tables: %', missing_tables;
   END IF;
 
-  IF (SELECT max(version) FROM taskflow_schema_migrations) <> 3 THEN
-    RAISE EXCEPTION 'expected schema version 3';
+  IF (SELECT max(version) FROM taskflow_schema_migrations) <> 5 THEN
+    RAISE EXCEPTION 'expected schema version 5';
   END IF;
 END;
 $$;

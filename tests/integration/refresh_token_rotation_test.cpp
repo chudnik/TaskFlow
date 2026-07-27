@@ -1,3 +1,4 @@
+#include "taskflow/infrastructure/authentication_sessions.hpp"
 #include "taskflow/infrastructure/refresh_tokens.hpp"
 
 #include <gtest/gtest.h>
@@ -62,5 +63,39 @@ TEST(RefreshTokenIntegration, LogoutRevokesSessionToken) {
   tokens.logout(issued.session_id);
   EXPECT_EQ(tokens.rotate(issued.token).status,
             infrastructure::RefreshRotationStatus::replay_detected);
+}
+
+TEST(RefreshTokenIntegration, ApplicationAdapterRotatesAndValidatorTracksSessionState) {
+  const auto dsn = integration_dsn();
+  if (dsn.empty()) {
+    GTEST_SKIP() << "TASKFLOW_TEST_POSTGRES_DSN is not configured";
+  }
+  infrastructure::PostgresConnection connection{dsn};
+  static_cast<void>(connection.execute("SET taskflow.test_database = 'on'"));
+  infrastructure::reset_database_for_tests(connection);
+  const auto user_id = insert_user(connection);
+  infrastructure::UserRepository users{connection};
+  infrastructure::SessionRepository sessions{connection};
+  infrastructure::RefreshTokenService refresh_tokens{connection};
+  infrastructure::PostgresAuthenticationSessionStore store{refresh_tokens, sessions, users};
+  infrastructure::PostgresAccountSessionValidator validator{connection};
+  const auto user = users.find_by_id(user_id);
+  ASSERT_TRUE(user);
+  const auto initial_expiry = domain::SystemClock{}.now() + std::chrono::hours{24};
+
+  const auto issued = store.create(*user, initial_expiry);
+  EXPECT_TRUE(validator.account_and_session_active(user_id, issued.session_id));
+
+  const auto renewed_expiry = domain::SystemClock{}.now() + std::chrono::hours{24 * 30};
+  const auto rotated = store.rotate(issued.refresh_token, renewed_expiry);
+  ASSERT_EQ(rotated.status, application::SessionRotationStatus::rotated);
+  ASSERT_TRUE(rotated.session);
+  EXPECT_NE(rotated.session->refresh_token, issued.refresh_token);
+  EXPECT_EQ(rotated.session->refresh_expires_at, renewed_expiry);
+
+  store.logout(issued.session_id);
+  EXPECT_FALSE(validator.account_and_session_active(user_id, issued.session_id));
+  EXPECT_EQ(store.rotate(rotated.session->refresh_token, renewed_expiry).status,
+            application::SessionRotationStatus::replay_detected);
 }
 } // namespace

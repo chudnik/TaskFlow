@@ -39,6 +39,9 @@ Operational defaults:
 - maximum request body: 1 MiB;
 - login/refresh limits: 10/30 за 60 секунд;
 - maximum logical connections: 1000.
+- worker poll/batch/lease: 500 мс / 16 / 30 секунд;
+- границы worker retry: от 250 мс до 30 секунд;
+- graceful shutdown deadline: 20 секунд.
 
 TLS завершается на trusted reverse proxy. Там же удаляются client-supplied forwarded
 headers. Access/refresh tokens никогда не передаются в URL.
@@ -77,3 +80,15 @@ pg_restore --clean --if-exists --no-owner --dbname="$RESTORE_DSN" taskflow.dump
 
 Бинарники можно откатывать, пока миграции additive. Schema rollback или destructive
 migration требует отдельного two-phase change.
+
+## Worker и graceful shutdown
+
+Health check контейнера worker подтверждает, что постоянный цикл работает. Idle
+worker остаётся healthy и использует прерываемое bounded ожидание. Истечение
+PostgreSQL lease позволяет восстановить jobs и outbox events после сбоя.
+
+При `SIGTERM` API и worker прекращают принимать или арендовать новую работу,
+завершают текущую, закрывают WebSocket и выходят до shutdown deadline. Во время
+drain API отвечает на business requests ошибкой `503 shutting_down`. Сценарий
+`tests/integration/runtime_fault_test.sh` проверяет shutdown и восстановление
+dependencies, а `tests/integration/full_runtime_e2e.sh` — публичный end-to-end flow.

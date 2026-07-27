@@ -88,6 +88,17 @@ resolve_value(std::string_view name, const RuntimeConfig::EnvironmentLookup &env
   return parsed;
 }
 
+[[nodiscard]] std::uint32_t parse_bounded(std::string_view name, const std::string &value,
+                                          const std::uint32_t minimum,
+                                          const std::uint32_t maximum) {
+  const auto parsed = parse_positive(name, value);
+  if (parsed < minimum || parsed > maximum) {
+    throw ConfigError{std::string{name} + " must be between " + std::to_string(minimum) + " and " +
+                      std::to_string(maximum)};
+  }
+  return parsed;
+}
+
 void validate_log_level(const std::string &level) {
   constexpr std::array<std::string_view, 6> levels{"trace", "debug", "info",
                                                    "warn",  "error", "critical"};
@@ -149,10 +160,32 @@ RuntimeConfig RuntimeConfig::load(const EnvironmentLookup &environment,
       .maximum_connections =
           parse_positive("TASKFLOW_MAXIMUM_CONNECTIONS",
                          value_or("TASKFLOW_MAXIMUM_CONNECTIONS", "1000", environment, read_file)),
+      .worker_poll_interval_ms = parse_bounded(
+          "TASKFLOW_WORKER_POLL_INTERVAL_MS",
+          value_or("TASKFLOW_WORKER_POLL_INTERVAL_MS", "500", environment, read_file), 10, 60000),
+      .worker_batch_size = parse_bounded(
+          "TASKFLOW_WORKER_BATCH_SIZE",
+          value_or("TASKFLOW_WORKER_BATCH_SIZE", "16", environment, read_file), 1, 1000),
+      .worker_lease_seconds = parse_bounded(
+          "TASKFLOW_WORKER_LEASE_SECONDS",
+          value_or("TASKFLOW_WORKER_LEASE_SECONDS", "30", environment, read_file), 1, 3600),
+      .worker_retry_initial_ms = parse_bounded(
+          "TASKFLOW_WORKER_RETRY_INITIAL_MS",
+          value_or("TASKFLOW_WORKER_RETRY_INITIAL_MS", "250", environment, read_file), 1, 60000),
+      .worker_retry_max_ms = parse_bounded(
+          "TASKFLOW_WORKER_RETRY_MAX_MS",
+          value_or("TASKFLOW_WORKER_RETRY_MAX_MS", "30000", environment, read_file), 1, 300000),
+      .shutdown_timeout_seconds = parse_bounded(
+          "TASKFLOW_SHUTDOWN_TIMEOUT_SECONDS",
+          value_or("TASKFLOW_SHUTDOWN_TIMEOUT_SECONDS", "30", environment, read_file), 1, 300),
   };
 
   if (config.jwt_signing_secret.size() < 32) {
     throw ConfigError{"TASKFLOW_JWT_SIGNING_SECRET must contain at least 32 bytes"};
+  }
+  if (config.worker_retry_initial_ms > config.worker_retry_max_ms) {
+    throw ConfigError{
+        "TASKFLOW_WORKER_RETRY_INITIAL_MS must not exceed TASKFLOW_WORKER_RETRY_MAX_MS"};
   }
   validate_log_level(config.log_level);
   return config;
@@ -169,7 +202,13 @@ std::string RuntimeConfig::redacted_diagnostics() const {
          << ", rate_limit_window_seconds=" << rate_limit_window_seconds
          << ", database_timeout_ms=" << database_timeout_ms
          << ", http_idle_timeout_seconds=" << http_idle_timeout_seconds
-         << ", maximum_connections=" << maximum_connections;
+         << ", maximum_connections=" << maximum_connections
+         << ", worker_poll_interval_ms=" << worker_poll_interval_ms
+         << ", worker_batch_size=" << worker_batch_size
+         << ", worker_lease_seconds=" << worker_lease_seconds
+         << ", worker_retry_initial_ms=" << worker_retry_initial_ms
+         << ", worker_retry_max_ms=" << worker_retry_max_ms
+         << ", shutdown_timeout_seconds=" << shutdown_timeout_seconds;
   return output.str();
 }
 

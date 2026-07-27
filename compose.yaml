@@ -73,6 +73,11 @@ services:
     secrets:
       - jwt_signing_secret
     depends_on: *app-dependencies
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
     restart: "no"
 
   integration-tests:

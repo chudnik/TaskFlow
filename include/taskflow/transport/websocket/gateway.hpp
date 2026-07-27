@@ -23,6 +23,9 @@ class Gateway {
 public:
   Gateway(const AuthenticationMiddleware &authentication, const domain::Clock &clock,
           std::size_t maximum_buffer, std::chrono::seconds heartbeat_timeout);
+  Gateway(const AuthenticationMiddleware &authentication, const domain::Clock &clock,
+          std::size_t maximum_buffer, std::chrono::seconds heartbeat_timeout,
+          std::size_t maximum_connections);
   [[nodiscard]] std::optional<domain::Uuid> open(std::string_view authorization);
   [[nodiscard]] bool enqueue(const domain::Uuid &connection_id, std::string frame);
   void heartbeat(const domain::Uuid &connection_id);
@@ -41,6 +44,7 @@ private:
   const domain::Clock *clock_;
   std::size_t maximum_buffer_;
   std::chrono::seconds heartbeat_timeout_;
+  std::size_t maximum_connections_;
   std::map<domain::Uuid, Connection> connections_;
 };
 

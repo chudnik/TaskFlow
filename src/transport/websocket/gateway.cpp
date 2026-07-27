@@ -1,13 +1,23 @@
 #include "taskflow/transport/websocket/gateway.hpp"
 
+#include <limits>
+
 namespace taskflow::transport::websocket {
 
 Gateway::Gateway(const AuthenticationMiddleware &authentication, const domain::Clock &clock,
                  const std::size_t maximum_buffer, const std::chrono::seconds heartbeat_timeout)
+    : Gateway(authentication, clock, maximum_buffer, heartbeat_timeout,
+              std::numeric_limits<std::size_t>::max()) {}
+
+Gateway::Gateway(const AuthenticationMiddleware &authentication, const domain::Clock &clock,
+                 const std::size_t maximum_buffer, const std::chrono::seconds heartbeat_timeout,
+                 const std::size_t maximum_connections)
     : authentication_{&authentication}, clock_{&clock}, maximum_buffer_{maximum_buffer},
-      heartbeat_timeout_{heartbeat_timeout} {}
+      heartbeat_timeout_{heartbeat_timeout}, maximum_connections_{maximum_connections} {}
 
 std::optional<domain::Uuid> Gateway::open(const std::string_view authorization) {
+  if (connections_.size() >= maximum_connections_)
+    return std::nullopt;
   const auto principal = authentication_->authenticate_bearer(authorization);
   if (!principal || principal->expires_at <= clock_->now())
     return std::nullopt;

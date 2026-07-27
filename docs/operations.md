@@ -36,6 +36,9 @@ Operational defaults:
 - maximum request body: 1 MiB;
 - login/refresh limits: 10/30 per 60 seconds;
 - maximum logical connections: 1000.
+- worker poll/batch/lease: 500 ms / 16 / 30 seconds;
+- worker retry bounds: 250 ms to 30 seconds;
+- graceful shutdown deadline: 20 seconds.
 
 Terminate TLS at a trusted reverse proxy. Strip client-supplied forwarded
 headers there and never pass access/refresh tokens in URLs.
@@ -79,3 +82,15 @@ projects, tasks, audit/outbox, notifications, and jobs before promotion.
 
 Roll application binaries back freely while migrations remain additive. Schema
 rollback or destructive migration requires a separate two-phase change.
+
+## Worker and shutdown operations
+
+The worker container health check verifies that its persistent loop is alive.
+An idle worker is healthy: it polls with an interruptible bounded wait. PostgreSQL
+lease expiry makes interrupted jobs and outbox events recoverable after a crash.
+
+On `SIGTERM`, API and worker stop accepting/leasing new work, drain current work,
+close WebSocket connections, and exit within the configured shutdown deadline.
+During API drain, business requests receive `503 shutting_down`. Use
+`tests/integration/runtime_fault_test.sh` to verify shutdown and dependency
+recovery and `tests/integration/full_runtime_e2e.sh` for the public-contract flow.

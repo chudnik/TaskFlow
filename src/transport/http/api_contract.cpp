@@ -112,6 +112,31 @@ RequestValidation validate_request(const std::string_view method, const std::siz
   return validation;
 }
 
+bool route_requires_authentication(const std::string_view method,
+                                   const std::string_view path) noexcept {
+  if (method == "OPTIONS" || path == api_prefix || path.starts_with("/health/"))
+    return false;
+  return path.starts_with(api_prefix) && path != "/api/v1/auth/register" &&
+         path != "/api/v1/auth/login" && path != "/api/v1/auth/refresh";
+}
+
+RouteAuthentication
+authenticate_route(const std::string_view method, const std::string_view path,
+                   const std::string_view authorization, const std::string_view request_id,
+                   const application::AuthenticationMiddleware *authentication) noexcept {
+  if (!route_requires_authentication(method, path))
+    return {};
+  if (authentication != nullptr) {
+    if (auto principal = authentication->authenticate_bearer(authorization))
+      return RouteAuthentication{std::move(principal), std::nullopt};
+  }
+  return RouteAuthentication{std::nullopt, ApiError{401,
+                                                    "unauthorized",
+                                                    "valid bearer authentication is required",
+                                                    {},
+                                                    std::string{request_id}}};
+}
+
 std::string serialize_liveness() { return "{\"status\":\"alive\"}"; }
 
 std::string serialize_readiness(const ReadinessReport &report) {

@@ -40,6 +40,33 @@ TEST(RuntimeConfigTest, LoadsValidatedValuesAndDefaults) {
   EXPECT_EQ(config.login_rate_limit, 10U);
   EXPECT_EQ(config.refresh_rate_limit, 30U);
   EXPECT_EQ(config.rate_limit_window_seconds, 60U);
+  EXPECT_EQ(config.worker_poll_interval_ms, 500U);
+  EXPECT_EQ(config.worker_batch_size, 16U);
+  EXPECT_EQ(config.worker_lease_seconds, 30U);
+  EXPECT_EQ(config.worker_retry_initial_ms, 250U);
+  EXPECT_EQ(config.worker_retry_max_ms, 30000U);
+  EXPECT_EQ(config.shutdown_timeout_seconds, 30U);
+}
+
+TEST(RuntimeConfigTest, LoadsBoundedWorkerAndShutdownSettings) {
+  const auto config = RuntimeConfig::load(
+      environment({{"TASKFLOW_POSTGRES_DSN", "postgresql://db/taskflow"},
+                   {"TASKFLOW_REDIS_URI", "redis://redis:6379"},
+                   {"TASKFLOW_JWT_SIGNING_SECRET", "0123456789abcdef0123456789abcdef"},
+                   {"TASKFLOW_WORKER_POLL_INTERVAL_MS", "100"},
+                   {"TASKFLOW_WORKER_BATCH_SIZE", "64"},
+                   {"TASKFLOW_WORKER_LEASE_SECONDS", "45"},
+                   {"TASKFLOW_WORKER_RETRY_INITIAL_MS", "50"},
+                   {"TASKFLOW_WORKER_RETRY_MAX_MS", "5000"},
+                   {"TASKFLOW_SHUTDOWN_TIMEOUT_SECONDS", "20"}}),
+      no_files);
+
+  EXPECT_EQ(config.worker_poll_interval_ms, 100U);
+  EXPECT_EQ(config.worker_batch_size, 64U);
+  EXPECT_EQ(config.worker_lease_seconds, 45U);
+  EXPECT_EQ(config.worker_retry_initial_ms, 50U);
+  EXPECT_EQ(config.worker_retry_max_ms, 5000U);
+  EXPECT_EQ(config.shutdown_timeout_seconds, 20U);
 }
 
 TEST(RuntimeConfigTest, ReadsSecretFromMountedFileAndStripsLineEnding) {
@@ -120,6 +147,32 @@ TEST(RuntimeConfigTest, RejectsZeroOperationalLimit) {
                                 {"TASKFLOW_MAXIMUM_CONNECTIONS", "0"}}),
                    no_files)),
                ConfigError);
+}
+
+TEST(RuntimeConfigTest, RejectsUnsafeWorkerBoundsAndRetryOrdering) {
+  const auto base = std::unordered_map<std::string, std::string>{
+      {"TASKFLOW_POSTGRES_DSN", "postgresql://db/taskflow"},
+      {"TASKFLOW_REDIS_URI", "redis://redis:6379"},
+      {"TASKFLOW_JWT_SIGNING_SECRET", "0123456789abcdef0123456789abcdef"}};
+
+  auto oversized_batch = base;
+  oversized_batch["TASKFLOW_WORKER_BATCH_SIZE"] = "1001";
+  EXPECT_THROW(
+      static_cast<void>(RuntimeConfig::load(environment(std::move(oversized_batch)), no_files)),
+      ConfigError);
+
+  auto invalid_retry = base;
+  invalid_retry["TASKFLOW_WORKER_RETRY_INITIAL_MS"] = "5000";
+  invalid_retry["TASKFLOW_WORKER_RETRY_MAX_MS"] = "100";
+  EXPECT_THROW(
+      static_cast<void>(RuntimeConfig::load(environment(std::move(invalid_retry)), no_files)),
+      ConfigError);
+
+  auto excessive_shutdown = base;
+  excessive_shutdown["TASKFLOW_SHUTDOWN_TIMEOUT_SECONDS"] = "301";
+  EXPECT_THROW(
+      static_cast<void>(RuntimeConfig::load(environment(std::move(excessive_shutdown)), no_files)),
+      ConfigError);
 }
 
 } // namespace

@@ -6,6 +6,20 @@
 namespace taskflow::transport::http {
 namespace {
 
+class StubAccessTokens final : public application::AccessTokenService {
+public:
+  std::optional<application::AuthenticatedPrincipal> principal;
+
+  [[nodiscard]] std::string create(const domain::User &, const domain::Uuid &) const override {
+    return {};
+  }
+
+  [[nodiscard]] std::optional<application::AuthenticatedPrincipal>
+  validate(std::string_view) const noexcept override {
+    return principal;
+  }
+};
+
 TEST(ApiRouterTest, SerializesStableJsonErrorEnvelope) {
   const ApiError error{422,
                        "validation_failed",
@@ -66,6 +80,30 @@ TEST(ApiRouterTest, AppliesSecurityHeadersAndExactCorsPolicy) {
   EXPECT_EQ(validate_request("POST", maximum_request_body_bytes + 1, "application/json", "hostile")
                 .error->code,
             "request_too_large");
+}
+
+TEST(ApiRouterTest, AuthenticatesProtectedRoutesAndLeavesPublicRoutesOpen) {
+  StubAccessTokens tokens;
+  const application::AuthenticationMiddleware authentication{tokens};
+  const auto public_route =
+      authenticate_route("POST", "/api/v1/auth/login", "", "request-public", &authentication);
+  EXPECT_FALSE(public_route.error);
+  EXPECT_FALSE(public_route.principal);
+
+  const auto rejected =
+      authenticate_route("GET", "/api/v1/projects", "", "request-protected", &authentication);
+  ASSERT_TRUE(rejected.error);
+  EXPECT_EQ(rejected.error->status, 401);
+  EXPECT_EQ(rejected.error->request_id, "request-protected");
+
+  tokens.principal =
+      application::AuthenticatedPrincipal{domain::Uuid::generate(), domain::Uuid::generate(),
+                                          domain::GlobalRole::user, domain::UtcInstant{}};
+  const auto accepted = authenticate_route("GET", "/api/v1/projects", "Bearer token",
+                                           "request-protected", &authentication);
+  ASSERT_TRUE(accepted.principal);
+  EXPECT_EQ(accepted.principal->user_id, tokens.principal->user_id);
+  EXPECT_FALSE(accepted.error);
 }
 
 } // namespace

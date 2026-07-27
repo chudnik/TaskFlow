@@ -214,8 +214,9 @@ TEST(ProjectRepositoriesIntegration, CommitsMatchingAuditAndOutboxForEveryMutati
   infrastructure::ProjectRepository projects{connection};
   infrastructure::TaskRepository tasks{connection};
   const auto project = projects.create_project("Audited", "", owner);
-  auto task =
-      tasks.create(project.id, "Audited task", "", domain::TaskPriority::medium, owner, {}, {});
+  const auto deadline = *domain::parse_utc("2026-08-01T12:00:00Z");
+  auto task = tasks.create(project.id, "Audited task", "", domain::TaskPriority::medium, owner,
+                           owner, deadline);
   task.title = "Changed";
   static_cast<void>(tasks.update(task, 1));
   const auto counts = connection.execute("SELECT (SELECT count(*) FROM audit_events)::text, "
@@ -226,6 +227,10 @@ TEST(ProjectRepositoriesIntegration, CommitsMatchingAuditAndOutboxForEveryMutati
       "SELECT count(*)::text FROM audit_events a FULL JOIN outbox_events o "
       "ON o.event_id = a.event_id WHERE a.event_id IS NULL OR o.event_id IS NULL");
   EXPECT_EQ(*unmatched.value(0, 0), "0");
+  const auto reminders = connection.execute(
+      "SELECT count(*)::text FROM jobs WHERE business_key LIKE $1 AND status='pending'",
+      {"task:" + task.id.to_string() + ":%"});
+  EXPECT_EQ(*reminders.value(0, 0), "2");
 }
 
 TEST(ProjectRepositoriesIntegration, RollsBackAndClaimsOutboxIdempotentlyWithSanitizedAudit) {
@@ -338,6 +343,36 @@ TEST(ProjectRepositoriesIntegration, LeasesRetriesRecoversAndTerminatesJobsAcros
       connection.execute("SELECT status,last_error FROM jobs WHERE id=$1::uuid", {id.to_string()});
   EXPECT_EQ(*state.value(0, 0), "failed");
   EXPECT_EQ(*state.value(0, 1), "terminal");
+
+  const auto recoverable = jobs.schedule("expired-lease", "test", "{}", now, 3, "lease-recovery");
+  ASSERT_EQ(jobs.lease_due("worker-a", 1, std::chrono::seconds{30}).size(), 1U);
+  static_cast<void>(
+      connection.execute("UPDATE jobs SET lease_expires_at=clock_timestamp()-interval '1 second' "
+                         "WHERE id=$1::uuid",
+                         {recoverable.to_string()}));
+  const auto recovered = jobs.lease_due("worker-b", 1, std::chrono::seconds{30});
+  ASSERT_EQ(recovered.size(), 1U);
+  EXPECT_EQ(recovered.front().id, recoverable);
+  jobs.succeed(recoverable, "worker-b");
+
+  const auto owner = insert_user(connection, "reminder-owner@example.com");
+  infrastructure::ProjectRepository projects{connection};
+  infrastructure::TaskRepository tasks{connection};
+  const auto project = projects.create_project("Reminder supersession", "", owner);
+  const auto first_deadline = *domain::parse_utc("2030-01-01T12:00:00Z");
+  auto task = tasks.create(project.id, "Deadline", "", domain::TaskPriority::medium, owner, owner,
+                           first_deadline);
+  const auto second_deadline = *domain::parse_utc("2030-01-02T12:00:00Z");
+  task.deadline_at = second_deadline;
+  static_cast<void>(tasks.update(task, 1));
+  const auto reminder_state =
+      connection.execute("SELECT count(*)::text, min((payload->>'version')::int)::text, "
+                         "count(DISTINCT business_key)::text FROM jobs "
+                         "WHERE business_key LIKE $1 AND status='pending'",
+                         {"task:" + task.id.to_string() + ":%"});
+  EXPECT_EQ(*reminder_state.value(0, 0), "2");
+  EXPECT_EQ(*reminder_state.value(0, 1), "2");
+  EXPECT_EQ(*reminder_state.value(0, 2), "2");
 }
 
 } // namespace

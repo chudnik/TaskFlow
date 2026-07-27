@@ -5,7 +5,7 @@
 
 namespace taskflow::infrastructure {
 
-inline constexpr std::int64_t expected_schema_version = 3;
+inline constexpr std::int64_t expected_schema_version = 5;
 
 enum class SchemaCompatibility {
   compatible,

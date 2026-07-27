@@ -1,5 +1,7 @@
 #include "taskflow/application/job_worker.hpp"
 
+#include <algorithm>
+
 namespace taskflow::application {
 
 JobWorker::JobWorker(JobLeaseStore &jobs, std::string worker_id, JobLog log)
@@ -8,6 +10,8 @@ JobWorker::JobWorker(JobLeaseStore &jobs, std::string worker_id, JobLog log)
 void JobWorker::register_handler(std::string type, JobHandler handler) {
   handlers_.insert_or_assign(std::move(type), std::move(handler));
 }
+
+void JobWorker::register_cycle(WorkerCycle cycle) { cycles_.push_back(std::move(cycle)); }
 
 std::size_t JobWorker::run_once(const std::size_t batch_size) {
   if (stopping_)
@@ -31,6 +35,34 @@ std::size_t JobWorker::run_once(const std::size_t batch_size) {
     }
   }
   return jobs.size();
+}
+
+void JobWorker::run_continuously(const std::size_t batch_size,
+                                 const std::chrono::milliseconds poll_interval,
+                                 const std::chrono::milliseconds retry_initial,
+                                 const std::chrono::milliseconds retry_max, WorkerWait wait,
+                                 WorkerLog log) {
+  auto retry_delay = retry_initial;
+  while (!stopping_) {
+    try {
+      auto processed = run_once(batch_size);
+      for (const auto &cycle : cycles_)
+        processed += cycle();
+      retry_delay = retry_initial;
+      if (log)
+        log("cycle_completed", std::to_string(processed));
+      if (processed == 0 && wait(poll_interval))
+        request_stop();
+    } catch (const std::exception &error) {
+      if (log)
+        log("dependency_retry", error.what());
+      if (wait(retry_delay))
+        request_stop();
+      retry_delay = std::min(retry_delay * 2, retry_max);
+    }
+  }
+  if (log)
+    log("stopped", "");
 }
 
 void JobWorker::request_stop() noexcept { stopping_ = true; }

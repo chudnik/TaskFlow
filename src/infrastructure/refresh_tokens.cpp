@@ -82,7 +82,9 @@ IssuedRefreshToken RefreshTokenService::create_session(const domain::Uuid &user_
   return {session_id, std::move(token)};
 }
 
-RefreshRotationResult RefreshTokenService::rotate(const std::string_view presented_token) {
+RefreshRotationResult
+RefreshTokenService::rotate(const std::string_view presented_token,
+                            const std::optional<domain::UtcInstant> renewed_expires_at) {
   const auto presented_hash = hash_token(presented_token);
   auto transaction = connection_->transaction();
   const auto current = transaction.execute(
@@ -121,10 +123,17 @@ RefreshRotationResult RefreshTokenService::rotate(const std::string_view present
   static_cast<void>(transaction.execute(
       "UPDATE session_refresh_tokens SET used_at = clock_timestamp() WHERE token_hash = $1",
       {presented_hash}));
-  static_cast<void>(transaction.execute(
-      "UPDATE sessions SET refresh_token_hash = $1, last_rotated_at = clock_timestamp() "
-      "WHERE id = $2::uuid",
-      {next_hash, session_id}));
+  if (renewed_expires_at) {
+    static_cast<void>(transaction.execute(
+        "UPDATE sessions SET refresh_token_hash = $1, expires_at = $2::timestamptz, "
+        "last_rotated_at = clock_timestamp() WHERE id = $3::uuid",
+        {next_hash, domain::format_utc(*renewed_expires_at), session_id}));
+  } else {
+    static_cast<void>(transaction.execute(
+        "UPDATE sessions SET refresh_token_hash = $1, last_rotated_at = clock_timestamp() "
+        "WHERE id = $2::uuid",
+        {next_hash, session_id}));
+  }
   static_cast<void>(transaction.execute(
       "INSERT INTO session_refresh_tokens(token_hash, session_id, token_family_id) "
       "VALUES($1, $2::uuid, $3::uuid)",

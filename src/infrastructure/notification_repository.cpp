@@ -27,18 +27,30 @@ NotificationRepository::NotificationRepository(PostgresConnection &connection)
 
 std::size_t NotificationRepository::materialize(const OutboxEvent &event,
                                                 const std::chrono::hours retention) {
+  return materialize_recipients(event, retention).size();
+}
+
+std::vector<domain::Uuid>
+NotificationRepository::materialize_recipients(const OutboxEvent &event,
+                                               const std::chrono::hours retention) {
   if (!event.project_id)
-    return 0;
+    return {};
   const auto result = connection_->execute(
       "INSERT INTO notification_events(event_id, source_event_id, recipient_user_id, "
       "project_id, event_type, entity_id, payload, expires_at) "
       "SELECT $1::uuid, $1::uuid, pm.user_id, $2::uuid, $3, $4::uuid, $5::jsonb, "
       "clock_timestamp() + ($6::bigint * interval '1 hour') "
       "FROM project_members pm WHERE pm.project_id = $2::uuid "
-      "ON CONFLICT(recipient_user_id, event_id) DO NOTHING",
+      "AND ($3 NOT IN ('task.pre_deadline','task.overdue') "
+      "OR pm.user_id = ($5::jsonb->>'recipient_id')::uuid) "
+      "ON CONFLICT(recipient_user_id, event_id) DO NOTHING RETURNING recipient_user_id::text",
       {event.event_id.to_string(), event.project_id->to_string(), event.event_type,
        event.aggregate_id.to_string(), event.payload, std::to_string(retention.count())});
-  return result.affected_rows();
+  std::vector<domain::Uuid> recipients;
+  recipients.reserve(result.row_count());
+  for (std::size_t row = 0; row < result.row_count(); ++row)
+    recipients.push_back(uuid(required(result, row, 0)));
+  return recipients;
 }
 
 std::vector<NotificationEvent> NotificationRepository::replay(const domain::Uuid &recipient_id,

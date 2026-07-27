@@ -18,6 +18,8 @@ class NotificationRepository {
 public:
   explicit NotificationRepository(PostgresConnection &connection);
   [[nodiscard]] std::size_t materialize(const OutboxEvent &event, std::chrono::hours retention);
+  [[nodiscard]] std::vector<domain::Uuid> materialize_recipients(const OutboxEvent &event,
+                                                                 std::chrono::hours retention);
   [[nodiscard]] std::vector<NotificationEvent>
   replay(const domain::Uuid &recipient_id, std::uint64_t after_sequence, std::size_t limit);
   void acknowledge(const domain::Uuid &recipient_id, std::uint64_t through_sequence);

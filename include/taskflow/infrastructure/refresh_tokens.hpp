@@ -26,7 +26,9 @@ public:
   explicit RefreshTokenService(PostgresConnection &connection);
   [[nodiscard]] IssuedRefreshToken create_session(const domain::Uuid &user_id,
                                                   domain::UtcInstant expires_at);
-  [[nodiscard]] RefreshRotationResult rotate(std::string_view presented_token);
+  [[nodiscard]] RefreshRotationResult
+  rotate(std::string_view presented_token,
+         std::optional<domain::UtcInstant> renewed_expires_at = std::nullopt);
   void logout(const domain::Uuid &session_id);
   void revoke_user_sessions(const domain::Uuid &user_id, std::string_view reason);
 
