@@ -7,4 +7,3 @@ openspec
 .DS_Store
 Dockerfile*
 compose*.yaml
-README.md
